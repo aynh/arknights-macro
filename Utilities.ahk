@@ -1,5 +1,22 @@
 #Requires AutoHotkey v2.0
 
+ArrayIncludes(arr, match) {
+  for element in arr
+    if element == match
+      return true
+}
+
+ArrayJoin(arr, separator := ' ') {
+  out := ""
+  for idx, element in arr {
+    out .= element
+    if idx != arr.Length {
+      out .= separator
+    }
+  }
+  return out
+}
+
 ClickImage(image, X1, Y1, X2, Y2) {
   CoordMode 'Pixel', 'Screen'
   CoordMode 'Mouse', 'Screen'

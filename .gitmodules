@@ -1,0 +1,3 @@
+[submodule "ocr"]
+	path = submodules/OCR
+	url = https://github.com/Descolada/OCR.git
