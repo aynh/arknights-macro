@@ -4,16 +4,19 @@ import itertools
 import os
 from datetime import date
 
-tl_tags: list[dict] = httpx.get(
+os.chdir(os.path.dirname(__file__))  # goto the script directory
+AUTO_RECRUIT_FILE_PATH = "../src/AutoRecruit.ahk"
+
+TL_TAGS: list[dict] = httpx.get(
     "https://raw.githubusercontent.com/Aceship/AN-EN-Tags/master/json/tl-tags.json"
 ).json()
-tl_akhr: list[dict] = httpx.get(
+TL_AKHR: list[dict] = httpx.get(
     "https://raw.githubusercontent.com/Aceship/AN-EN-Tags/master/json/tl-akhr.json"
 ).json()
-tl_type: list[dict] = httpx.get(
+TL_TYPE: list[dict] = httpx.get(
     "https://raw.githubusercontent.com/Aceship/AN-EN-Tags/master/json/tl-type.json"
 ).json()
-tl_unreadablename: list[dict] = httpx.get(
+TL_UNREADABLENAME: list[dict] = httpx.get(
     "https://raw.githubusercontent.com/Aceship/AN-EN-Tags/master/json/tl-unreadablename.json"
 ).json()
 
@@ -21,7 +24,7 @@ tl_unreadablename: list[dict] = httpx.get(
 def main():
     raw_operator_pool = [
         operator
-        for operator in tl_akhr
+        for operator in TL_AKHR
         if not (operator.get("globalHidden") or operator["hidden"])
     ]
 
@@ -39,8 +42,7 @@ def main():
         )
     operator_pool.sort(key=lambda operator: (operator["rarity"], operator["name"]))
 
-    os.chdir(os.path.dirname(__file__))
-    with open("../AutoRecruit.ahk", "r") as f:
+    with open(AUTO_RECRUIT_FILE_PATH, "r") as f:
         data = []
         while line := f.readline():
             data.append(line)
@@ -65,14 +67,14 @@ def main():
         data.append(f"  Operator{tuple(operator.values())},\n")
     data.append("]\n")
 
-    with open("../AutoRecruit.ahk", "w") as f:
+    with open(AUTO_RECRUIT_FILE_PATH, "w") as f:
         for line in data:
             f.write(line)
 
 
 # translates cn tag to en
 def translate_tag(tag):
-    for tag_dict in tl_tags:
+    for tag_dict in TL_TAGS:
         if tag_dict["tag_cn"] == tag:
             return tag_dict["tag_en"]
 
@@ -81,7 +83,7 @@ def translate_tag(tag):
 
 # translates cn type (class) to en
 def translate_type(typ):
-    for typ_dict in tl_type:
+    for typ_dict in TL_TYPE:
         if typ_dict["type_cn"] == typ:
             return typ_dict["type_en"]
 
@@ -90,7 +92,7 @@ def translate_type(typ):
 
 # translates unreadable name to en
 def translate_unreadable_name(name):
-    for name_dict in tl_unreadablename:
+    for name_dict in TL_UNREADABLENAME:
         if name_dict["name"] == name:
             return name_dict["name_en"]
 

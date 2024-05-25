@@ -26,7 +26,7 @@ ClickImage(image, X1, Y1, X2, Y2) {
     &X, &Y,
     ; widen the region a bit for some tolerance
     X1 - 10, Y1 - 10, X2 + 10, Y2 + 10,
-    Format("*80 images/{}.png", image)
+    Format("*80 ../assets/images/{}.png", image)
   ) {
     Sleep(2500)
     ; click the middle instead of top left corner of the region
