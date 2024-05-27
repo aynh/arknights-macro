@@ -52,20 +52,23 @@ def main():
     data.append("\n")
     data.append(f"; Last updated: {date.today()}\n")
 
-    data.append("\n")
-    data.append("combinations := [\n")
+    data.append("class AutoRecruitData {\n")
+
+    data.append("  static combinations := [\n")
     for idx in range(1, 4):
-        data.append(" ")
+        data.append("   ")
         for combination in itertools.combinations([1, 2, 3, 4, 5], idx):
             data.append(f" {list(combination)},")
         data.append("\n")
-    data.append("]\n")
+    data.append("  ]\n")
 
     data.append("\n")
-    data.append("operators := [\n")
+    data.append("  static operators := [\n")
     for operator in operator_pool:
-        data.append(f"  Operator{tuple(operator.values())},\n")
-    data.append("]\n")
+        data.append(f"    Operator{tuple(operator.values())},\n")
+    data.append("  ]\n")
+
+    data.append("}\n")
 
     with open(AUTO_RECRUIT_FILE_PATH, "w") as f:
         for line in data:

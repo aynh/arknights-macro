@@ -1,6 +1,6 @@
 #Requires AutoHotkey v2.0
 
-#Include Utilities.ahk
+#Include Helper.ahk
 
 RepeatVisit() {
   idx := 1

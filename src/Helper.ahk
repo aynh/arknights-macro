@@ -17,18 +17,19 @@ ArrayJoin(arr, separator := ' ') {
   return out
 }
 
-ClickImage(image, X1, Y1, X2, Y2) {
+ClickImage(image_name, X1, Y1, X2, Y2) {
   CoordMode 'Pixel', 'Screen'
   CoordMode 'Mouse', 'Screen'
+  SendMode 'Event'
+  SetDefaultMouseSpeed 50
 
   Sleep 1000
   if ImageSearch(
     &X, &Y,
     ; widen the region a bit for some tolerance
     X1 - 10, Y1 - 10, X2 + 10, Y2 + 10,
-    Format("*80 ../assets/images/{}.png", image)
+    Format("*80 ../assets/images/{}.png", image_name)
   ) {
-    Sleep(2500)
     ; click the middle instead of top left corner of the region
     X += (X2 - X1) / 2
     Y += (Y2 - Y1) / 2
