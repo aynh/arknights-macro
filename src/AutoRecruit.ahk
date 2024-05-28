@@ -11,6 +11,9 @@ class AutoRecruitConst {
   statiC MAX_RARITY := 6
   static MIN_RARITY := 4
 
+  static REFRESH_TAG_BUTTON_REGION := [965, 390, 1100, 510]
+  static REFRESH_TAG_CONFIRM_XY := [890, 530]
+
   static TAGS_XY := [
     [410, 390], [585, 390], [765, 390],
     [410, 465], [585, 465],
@@ -26,7 +29,15 @@ AutoRecruit() {
   matches := MatchRecruitTags(tags)
   best_combination := GetBestCombination(matches)
 
-  ClickRecruitTags(best_combination)
+  if (
+    best_combination.rarity < AutoRecruitConst.MIN_RARITY
+    ; try to refresh if the best combination rarity is below MIN_RARITY
+    && RefreshRecruitTags()
+  ) { ; then repeat the whole function if it refreshes
+    Sleep(2000)
+    AutoRecruit()
+  } else
+    ClickRecruitTags(best_combination)
 }
 
 ClickRecruitTags(best_combination) {
@@ -47,6 +58,21 @@ ClickRecruitTags(best_combination) {
 
     Click AutoRecruitConst.DECREMENT_TIMER_HOUR_XY[1], AutoRecruitConst.DECREMENT_TIMER_HOUR_XY[2]
   }
+}
+
+RefreshRecruitTags() {
+  SendMode 'Event'
+  SetDefaultMouseSpeed 50
+  region := AutoRecruitConst.REFRESH_TAG_BUTTON_REGION
+  if ClickImage(
+    'refresh-recruit',
+    region[1], region[2], region[3], region[4]
+  ) {
+    Click AutoRecruitConst.REFRESH_TAG_CONFIRM_XY[1], AutoRecruitConst.REFRESH_TAG_CONFIRM_XY[2]
+    return true
+  }
+
+  return false
 }
 
 GetBestCombination(matches) {
