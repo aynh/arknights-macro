@@ -9,10 +9,18 @@ RepeatStage() {
     ClickSequence(["end"], [70, 190, 170, 270])
   ]
 
-  prompt := InputBox("How many runs?", "RepeatStage", "w150 h90")
+  prompt := InputBox(, "RepeatStage", "w150 h75")
   if prompt.Result != 'OK'
     return
-  else if !IsNumber(prompt.Value) {
+
+  if StrLower(prompt.Value) == "annihilation" {
+    CLICK_SEQUENCES := [
+      ClickSequence(['start-annihilation-1'], [1110, 670, 1320, 720]),
+      ClickSequence(['start-annihilation-2'], [1110, 670, 1320, 720]),
+      ClickSequence(['end'], [70, 190, 170, 270])
+    ]
+    count := 5
+  } else if !IsNumber(prompt.Value) {
     MsgBox "Value must be a number", , 0x10
     return
   }
