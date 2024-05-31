@@ -13,6 +13,11 @@
 #Escape:: Reload() ; WIN + Esc
 
 Do(function) {
-  function()
-  MsgBox(function.Name . ' has completed!', A_ScriptName, 0x40 + 0x1000)
+  static IS_RUNNING := false
+  if !IS_RUNNING {
+    IS_RUNNING := true
+    function()
+    MsgBox(function.Name . ' has completed!', A_ScriptName, 0x40 + 0x1000)
+    IS_RUNNING := false
+  }
 }
