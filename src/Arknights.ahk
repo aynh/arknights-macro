@@ -1,4 +1,5 @@
 #Requires AutoHotkey v2.0
+#SingleInstance Force
 
 #Include AutoRecruit.ahk
 #Include RepeatStage.ahk
@@ -9,6 +10,7 @@
 <+#1:: Do(RepeatAnnihilation) ; LSHIFT + WIN + 1
 #2:: Do(RepeatVisit) ; WIN + 2
 #3:: Do(AutoRecruit) ; WIN + 3
+#Escape:: Reload() ; WIN + Esc
 
 Do(function) {
   function()
