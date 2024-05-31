@@ -6,6 +6,7 @@
 
 #HotIf WinActive('Arknights ahk_class CROSVM_1')
 #1:: Do(RepeatStage) ; WIN + 1
+<+#1:: Do(RepeatAnnihilation) ; LSHIFT + WIN + 1
 #2:: Do(RepeatVisit) ; WIN + 2
 #3:: Do(AutoRecruit) ; WIN + 3
 
