@@ -27,12 +27,14 @@ RepeatAnnihilation() {
 
 RepeatStage() {
   prompt := InputBox(, "RepeatStage", "w150 h75")
-  if (prompt.Result != 'OK') {
+  if prompt.Result != 'OK' {
     return
   }
 
-  if prompt.Value == ''
+  if prompt.Value == '' {
+    Sleep 300
     RepeatStageAuto()
+  }
   else if !IsNumber(prompt.Value)
     return
   else
