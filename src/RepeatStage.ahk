@@ -53,7 +53,7 @@ RepeatStageAuto() {
         ; OCR.FromRect uses width and height as 3rd and 4th
         ; parameter instead of the usual x2 y2
         region[3] - region[1], region[4] - region[2],
-        'en', 2.5
+        'en', 4
       ).Text,
       '/'
     )[1]
@@ -65,7 +65,7 @@ RepeatStageAuto() {
       OCR.FromRect(
         region[1], region[2],
         region[3] - region[1], region[4] - region[2],
-        'en', 2.5
+        'en', 4
       ).Text
     )
   )
