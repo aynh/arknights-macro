@@ -36,7 +36,10 @@ RepeatStage() {
   else if !IsNumber(prompt.Value)
     return
   else
-    RepeatSequences(RepeatStageConst.NORMAL_STAGE_SEQUENCES, Number(prompt.Value))
+    RepeatSequences(
+      RepeatStageConst.NORMAL_STAGE_SEQUENCES,
+      Number(prompt.Value)
+    )
 }
 
 RepeatStageAuto() {
@@ -67,13 +70,15 @@ RepeatStageAuto() {
     )
   )
 
-  count := Floor(sanity_count / sanity_per_stage)
-  RepeatSequences(RepeatStageConst.NORMAL_STAGE_SEQUENCES, count)
+  RepeatSequences(
+    RepeatStageConst.NORMAL_STAGE_SEQUENCES,
+    sanity_count // sanity_per_stage
+  )
 }
 
 RepeatSequences(sequences, count) {
   idx := 0
-  while Floor(idx / sequences.Length) < count {
+  while (idx // sequences.Length) < count {
     click_sequence := sequences[
       Mod(idx, sequences.Length) + 1 ; ahk array starts at 1
     ]
