@@ -2,6 +2,8 @@
 
 #Include Helper.ahk
 
+#Include <OCR>
+
 class RepeatStageConst {
   static ANNIHILATION_SEQUENCES := [
     ClickSequence(['start-annihilation-1'], [1110, 670, 1320, 720]),
@@ -14,6 +16,9 @@ class RepeatStageConst {
     ClickSequence(["start-2a", "start-2b"], [1110, 400, 1240, 680]),
     ClickSequence(["end"], [70, 190, 170, 270])
   ]
+
+  static SANITY_COUNT_REGION := [1210, 20, 1290, 65]
+  static SANITY_PER_STAGE_REGION := [1255, 735, 1305, 760]
 }
 
 RepeatAnnihilation() {
@@ -22,11 +27,48 @@ RepeatAnnihilation() {
 
 RepeatStage() {
   prompt := InputBox(, "RepeatStage", "w150 h75")
-  if (prompt.Result != 'OK') || (!IsNumber(prompt.Value)) {
+  if (prompt.Result != 'OK') {
     return
   }
 
-  RepeatSequences(RepeatStageConst.NORMAL_STAGE_SEQUENCES, Number(prompt.Value))
+  if prompt.Value == ''
+    RepeatStageAuto()
+  else if !IsNumber(prompt.Value)
+    return
+  else
+    RepeatSequences(RepeatStageConst.NORMAL_STAGE_SEQUENCES, Number(prompt.Value))
+}
+
+RepeatStageAuto() {
+  region := RepeatStageConst.SANITY_COUNT_REGION
+  sanity_count := Number(
+    StrSplit(
+      ; this OCR results in value like 14/130
+      ; so we split it and get the first part
+      OCR.FromRect(
+        region[1], region[2],
+        ; OCR.FromRect uses width and height as 3rd and 4th
+        ; parameter instead of the usual x2 y2
+        region[3] - region[1], region[4] - region[2],
+        'en', 2.5
+      ).Text,
+      '/'
+    )[1]
+  )
+
+  region := RepeatStageConst.SANITY_PER_STAGE_REGION
+  sanity_per_stage := -( ; negate the value to make it positive
+    Number(
+      OCR.FromRect(
+        region[1], region[2],
+        region[3] - region[1], region[4] - region[2],
+        'en', 2.5
+      ).Text
+    )
+  )
+
+  count := Floor(sanity_count / sanity_per_stage)
+  RepeatSequences(RepeatStageConst.NORMAL_STAGE_SEQUENCES, count)
 }
 
 RepeatSequences(sequences, count) {
