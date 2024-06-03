@@ -34,10 +34,15 @@ def main():
             {
                 "name": translate_unreadable_name(operator["name_en"]),
                 "rarity": operator["level"],
-                "tags": [
-                    translate_type(operator["type"]),
-                    *(translate_tag(tag) for tag in operator["tags"]),
-                ],
+                "tags": list(
+                    map(
+                        normalize_tag,
+                        [
+                            translate_type(operator["type"]),
+                            *(translate_tag(tag) for tag in operator["tags"]),
+                        ],
+                    )
+                ),
             }
         )
     operator_pool.sort(key=lambda operator: (operator["rarity"], operator["name"]))
@@ -73,6 +78,10 @@ def main():
     with open(AUTO_RECRUIT_FILE_PATH, "w") as f:
         for line in data:
             f.write(line)
+
+
+def normalize_tag(tag: str):
+    return tag.lower().replace("-", " ")
 
 
 # translates cn tag to en
