@@ -45,31 +45,17 @@ RepeatStage() {
 }
 
 RepeatStageAuto() {
-  region := RepeatStageConst.SANITY_COUNT_REGION
   sanity_count := Number(
     StrSplit(
       ; this OCR results in value like 14/130
       ; so we split it and get the first part
-      OCR.FromRect(
-        region[1], region[2],
-        ; OCR.FromRect uses width and height as 3rd and 4th
-        ; parameter instead of the usual x2 y2
-        region[3] - region[1], region[4] - region[2],
-        'en', 4
-      ).Text,
+      OCR_Region(RepeatStageConst.SANITY_COUNT_REGION),
       '/'
     )[1]
   )
 
-  region := RepeatStageConst.SANITY_PER_STAGE_REGION
   sanity_per_stage := -( ; negate the value to make it positive
-    Number(
-      OCR.FromRect(
-        region[1], region[2],
-        region[3] - region[1], region[4] - region[2],
-        'en', 4
-      ).Text
-    )
+    Number(OCR_Region(RepeatStageConst.SANITY_PER_STAGE_REGION, 4))
   )
 
   RepeatSequences(
@@ -101,7 +87,7 @@ class ClickSequence {
     loop {
       if ClickImage(
         this.variations[Mod(idx, this.variations.Length) + 1],
-        this.region[1], this.region[2], this.region[3], this.region[4],
+        this.region
       ) {
         return true
       }

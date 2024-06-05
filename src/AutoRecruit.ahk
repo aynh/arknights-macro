@@ -14,7 +14,7 @@ class AutoRecruitConst {
   static REFRESH_TAG_BUTTON_REGION := [965, 390, 1100, 510]
   static REFRESH_TAG_CONFIRM_XY := [890, 530]
 
-  static TAGS_XY := [
+  static TAGS_TOP_LEFT_XY := [
     [410, 390], [585, 390], [765, 390],
     [410, 465], [585, 465],
   ]
@@ -46,7 +46,7 @@ ClickRecruitTags(best_combination) {
   if best_combination.rarity >= AutoRecruitConst.MIN_RARITY {
     ; click the tags and set timer to max if minimum rarity is equal or greater than MIN_RARITY
     for idx in best_combination.value {
-      xy := AutoRecruitConst.TAGS_XY[idx]
+      xy := AutoRecruitConst.TAGS_TOP_LEFT_XY[idx]
       Click xy[1] + AutoRecruitConst.TAG_WIDTH / 2, xy[2] + AutoRecruitConst.TAG_HEIGHT / 2
     }
     Click AutoRecruitConst.DECREMENT_TIMER_HOUR_XY[1], AutoRecruitConst.DECREMENT_TIMER_HOUR_XY[2]
@@ -63,10 +63,9 @@ ClickRecruitTags(best_combination) {
 RefreshRecruitTags() {
   SendMode 'Event'
   SetDefaultMouseSpeed 50
-  region := AutoRecruitConst.REFRESH_TAG_BUTTON_REGION
   if ClickImage(
     'refresh-recruit',
-    region[1], region[2], region[3], region[4]
+    AutoRecruitConst.REFRESH_TAG_BUTTON_REGION
   ) {
     Click AutoRecruitConst.REFRESH_TAG_CONFIRM_XY[1], AutoRecruitConst.REFRESH_TAG_CONFIRM_XY[2]
     return true
@@ -123,7 +122,7 @@ MatchRecruitTags(tags) {
 
 ReadRecruitTags() {
   tags := []
-  for xy in AutoRecruitConst.TAGS_XY {
+  for xy in AutoRecruitConst.TAGS_TOP_LEFT_XY {
     tag := OCR.FromRect(
       xy[1], xy[2],
       AutoRecruitConst.TAG_WIDTH, AutoRecruitConst.TAG_HEIGHT,
