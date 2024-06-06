@@ -49,7 +49,7 @@ RepeatStageAuto() {
     StrSplit(
       ; this OCR results in value like 14/130
       ; so we split it and get the first part
-      OCR_Region(RepeatStageConst.SANITY_COUNT_REGION),
+      OCR_Region(RepeatStageConst.SANITY_COUNT_REGION, 4),
       '/'
     )[1]
   )
