@@ -5,7 +5,7 @@ import os
 from datetime import date
 
 os.chdir(os.path.dirname(__file__))  # goto the script directory
-AUTO_RECRUIT_FILE_PATH = "../src/AutoRecruit.ahk"
+RECRUIT_TOOL_FILE_PATH = "../src/RecruitTool.ahk"
 
 TL_TAGS: list[dict] = httpx.get(
     "https://raw.githubusercontent.com/Aceship/AN-EN-Tags/master/json/tl-tags.json"
@@ -47,7 +47,7 @@ def main():
         )
     operator_pool.sort(key=lambda operator: (operator["rarity"], operator["name"]))
 
-    with open(AUTO_RECRUIT_FILE_PATH, "r") as f:
+    with open(RECRUIT_TOOL_FILE_PATH, "r") as f:
         data = []
         while line := f.readline():
             data.append(line)
@@ -57,7 +57,7 @@ def main():
     data.append("\n")
     data.append(f"; Last updated: {date.today()}\n")
 
-    data.append("class AutoRecruitData {\n")
+    data.append("class RecruitToolData {\n")
 
     data.append("  static combinations := [\n")
     for idx in range(1, 4):
@@ -75,7 +75,7 @@ def main():
 
     data.append("}\n")
 
-    with open(AUTO_RECRUIT_FILE_PATH, "w") as f:
+    with open(RECRUIT_TOOL_FILE_PATH, "w") as f:
         for line in data:
             f.write(line)
 

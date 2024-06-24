@@ -4,15 +4,9 @@
 
 #Include <OCR>
 
-class AutoRecruitConst {
-  static DECREMENT_TIMER_HOUR_XY := [480, 320]
-  static DECREMENT_TIMER_MINUTE_XY := [655, 320]
-
+class RecruitToolConst {
   statiC MAX_RARITY := 6
   static MIN_RARITY := 4
-
-  static REFRESH_TAG_BUTTON_REGION := [965, 390, 1100, 510]
-  static REFRESH_TAG_CONFIRM_XY := [890, 530]
 
   static TAGS_TOP_LEFT_XY := [
     [410, 390], [585, 390], [765, 390],
@@ -24,96 +18,80 @@ class AutoRecruitConst {
 }
 
 
-AutoRecruit() {
+RecruitTool() {
   tags := ReadRecruitTags()
   matches := MatchRecruitTags(tags)
-  best_combination := GetBestCombination(matches)
 
-  if (
-    best_combination.rarity < AutoRecruitConst.MIN_RARITY
-    ; try to refresh if the best combination rarity is below MIN_RARITY
-    && RefreshRecruitTags()
-  ) { ; then repeat the whole function if it refreshes
-    Sleep(2000)
-    AutoRecruit()
-  } else
-    ClickRecruitTags(best_combination)
-}
+  if matches.Length == 0
+    return
 
-ClickRecruitTags(best_combination) {
-  SendMode 'Event'
-  SetDefaultMouseSpeed 25
-  if best_combination.rarity >= AutoRecruitConst.MIN_RARITY {
-    ; click the tags and set timer to max if minimum rarity is equal or greater than MIN_RARITY
-    for idx in best_combination.value {
-      xy := AutoRecruitConst.TAGS_TOP_LEFT_XY[idx]
-      Click xy[1] + AutoRecruitConst.TAG_WIDTH / 2, xy[2] + AutoRecruitConst.TAG_HEIGHT / 2
-    }
-    Click AutoRecruitConst.DECREMENT_TIMER_HOUR_XY[1], AutoRecruitConst.DECREMENT_TIMER_HOUR_XY[2]
-  }
-  else {
-    ; otherwise, set timer to 7:40:00 (minimum time for getting at least 3★)
-    loop 3
-      Click AutoRecruitConst.DECREMENT_TIMER_MINUTE_XY[1], AutoRecruitConst.DECREMENT_TIMER_MINUTE_XY[2]
+  operator_combination_map := Map()
+  for match in matches {
+    combination_tags := []
+    for idx in match.combination
+      combination_tags.Push tags[idx]
 
-    Click AutoRecruitConst.DECREMENT_TIMER_HOUR_XY[1], AutoRecruitConst.DECREMENT_TIMER_HOUR_XY[2]
-  }
-}
-
-RefreshRecruitTags() {
-  SendMode 'Event'
-  SetDefaultMouseSpeed 50
-  if ClickImage(
-    'refresh-recruit',
-    AutoRecruitConst.REFRESH_TAG_BUTTON_REGION
-  ) {
-    Click AutoRecruitConst.REFRESH_TAG_CONFIRM_XY[1], AutoRecruitConst.REFRESH_TAG_CONFIRM_XY[2]
-    return true
-  }
-
-  return false
-}
-
-GetBestCombination(matches) {
-  best_combination := []
-  min_rarity := AutoRecruitConst.MIN_RARITY - 1
-
-  for combination, matching_operators in matches {
-    combination_min_rarity := AutoRecruitConst.MAX_RARITY
-    for operator in matching_operators
-      combination_min_rarity := Min(combination_min_rarity, operator.rarity)
-
-    combination_arr := StrSplit(combination, '|')
-    if (
-      ; replace the last best combination if current combination minimum rarity is higher
-      combination_min_rarity > min_rarity || (
-        ; or if it has the same rarity, but with fewer tag combinations
-        combination_min_rarity == min_rarity
-        && combination_arr.Length < best_combination.Length
+    for operator in match.operators
+      operator_combination_map.Set(
+        Format("{}★ - {}", operator.rarity, operator.name), combination_tags
       )
-    ) {
-      min_rarity := combination_min_rarity
-      best_combination := combination_arr
-    }
   }
 
-  return { value: best_combination, rarity: min_rarity }
+  recruit_tool_gui := Gui("AlwaysOnTop -MinimizeBox", "RecruitTool")
+
+  recruit_tool_gui.AddText(, "Guaranteed Operator List")
+  gui_operator_dropdown := recruit_tool_gui.AddDropDownList(
+    , StrSplit(
+      Sort(
+        ArrayJoin( ; Sort uses string for some reason
+          [operator_combination_map*], '|'
+        ),
+        'RN D|' ; use reversed numeric sort and | as delimiter
+      ),
+      '|'
+    )
+  )
+
+  recruit_tool_gui.AddText(, "Tags combination")
+  gui_operator_combination := recruit_tool_gui.AddListBox(, ["", "", ""])
+  UpdateGuiOperatorCombination(*) {
+    gui_operator_combination.Delete()
+    gui_operator_combination.Add(operator_combination_map[gui_operator_dropdown.Text])
+  }
+
+  gui_operator_dropdown.OnEvent('Change', UpdateGuiOperatorCombination)
+  gui_operator_dropdown.Choose(1)
+  UpdateGuiOperatorCombination()
+
+  recruit_tool_gui.Show()
 }
 
 MatchRecruitTags(tags) {
-  matches := Map()
-  for combination_idx in AutoRecruitData.combinations {
-    combination := []
+  matches := []
+
+combination_loop:
+  for combination_idx in RecruitToolData.combinations {
+    combination_tags := []
     for idx in combination_idx
-      combination.Push tags[idx]
+      combination_tags.Push tags[idx]
 
-    combination_matches := []
-    for operator in AutoRecruitData.operators
-      if operator.MatchCombination(combination)
-        combination_matches.Push operator
+    combination_operators := []
+    combination_min_rarity := RecruitToolConst.MAX_RARITY
+    for operator in RecruitToolData.operators
+      if operator.MatchCombination(combination_tags) {
+        if operator.rarity < RecruitToolConst.MIN_RARITY {
+          ; skip this combination if there's
+          ; an operator with rarity below the minimum
+          continue combination_loop
+        } else if operator.rarity <= combination_min_rarity {
+          ; only add operator with the lowest rarity
+          combination_min_rarity := operator.rarity
+          combination_operators.Push operator
+        }
+      }
 
-    if combination_matches.Length > 0 {
-      matches.Set(ArrayJoin(combination_idx, '|'), combination_matches)
+    if combination_operators.Length > 0 {
+      matches.Push({ combination: combination_idx, operators: combination_operators })
     }
   }
 
@@ -122,10 +100,10 @@ MatchRecruitTags(tags) {
 
 ReadRecruitTags() {
   tags := []
-  for xy in AutoRecruitConst.TAGS_TOP_LEFT_XY {
+  for xy in RecruitToolConst.TAGS_TOP_LEFT_XY {
     tag := OCR.FromRect(
       xy[1], xy[2],
-      AutoRecruitConst.TAG_WIDTH, AutoRecruitConst.TAG_HEIGHT,
+      RecruitToolConst.TAG_WIDTH, RecruitToolConst.TAG_HEIGHT,
       'en-US', 2.5
     ).Text
     ; alter the tag a little for consistency with aceship data
@@ -160,7 +138,7 @@ class Operator {
 ; --- everything below is automatically generated by scripts/fetch_recruit_data.py
 
 ; Last updated: 2024-06-04
-class AutoRecruitData {
+class RecruitToolData {
   static combinations := [
     [1], [2], [3], [4], [5],
     [1, 2], [1, 3], [1, 4], [1, 5], [2, 3], [2, 4], [2, 5], [3, 4], [3, 5], [4, 5],
