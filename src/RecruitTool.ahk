@@ -75,16 +75,23 @@ combination_loop:
     for idx in combination_idx
       combination_tags.Push tags[idx]
 
+    has_robot := ArrayIncludes(combination_tags, 'robot')
+
     combination_operators := []
     combination_min_rarity := RecruitToolConst.MAX_RARITY
     for operator in RecruitToolData.operators
       if operator.MatchCombination(combination_tags) {
-        if operator.rarity < RecruitToolConst.MIN_RARITY {
+        if (
+          operator.rarity < RecruitToolConst.MIN_RARITY
+          && operator.rarity != 1
+        ) {
           ; skip this combination if there's
           ; an operator with rarity below the minimum
           continue combination_loop
-        } else if operator.rarity <= combination_min_rarity {
-          ; only add operator with the lowest rarity
+        } else if (
+          operator.rarity <= combination_min_rarity
+          || (has_robot && operator.rarity == 1)
+        ) {
           combination_min_rarity := operator.rarity
           combination_operators.Push operator
         }
@@ -124,7 +131,7 @@ class Operator {
 
   MatchCombination(tag_combination) {
     if this.rarity == 6 ; 6★ needs top operator tag
-      && !ArrayIncludes(tag_combination, "Top Operator")
+      && !ArrayIncludes(tag_combination, "top operator")
       return false
 
     for tag in tag_combination
