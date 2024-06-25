@@ -25,26 +25,33 @@ RecruitTool() {
   if matches.Length == 0
     return
 
-  operator_combination_map := Map()
+  operator_map := Map()
   for match in matches {
     combination_tags := []
     for idx in match.combination
       combination_tags.Push tags[idx]
 
-    for operator in match.operators
-      operator_combination_map.Set(
-        Format("{}★ - {}", operator.rarity, operator.name), combination_tags
+    for idx, operator in match.operators {
+      others := []
+      for other_idx, other_operator in match.operators
+        if other_idx != idx
+          others.Push other_operator.ToString()
+
+      operator_map.Set(
+        operator.ToString(), { combination: combination_tags, others: others }
       )
+    }
   }
 
   recruit_tool_gui := Gui("AlwaysOnTop -MinimizeBox", "RecruitTool")
 
-  recruit_tool_gui.AddText(, "Guaranteed Operator List")
+  recruit_tool_gui.AddText(, "Guaranteed operator list")
   gui_operator_dropdown := recruit_tool_gui.AddDropDownList(
-    , StrSplit(
+    'Choose1',
+    StrSplit(
       Sort(
         ArrayJoin( ; Sort uses string for some reason
-          [operator_combination_map*], '|'
+          [operator_map*], '|'
         ),
         'RN D|' ; use reversed numeric sort and | as delimiter
       ),
@@ -53,15 +60,22 @@ RecruitTool() {
   )
 
   recruit_tool_gui.AddText(, "Tags combination")
-  gui_operator_combination := recruit_tool_gui.AddListBox(, ["", "", ""])
+  gui_operator_combination := recruit_tool_gui.AddListBox('r3')
   UpdateGuiOperatorCombination(*) {
     gui_operator_combination.Delete()
-    gui_operator_combination.Add(operator_combination_map[gui_operator_dropdown.Text])
+    gui_operator_combination.Add(operator_map[gui_operator_dropdown.Text].combination)
   }
-
   gui_operator_dropdown.OnEvent('Change', UpdateGuiOperatorCombination)
-  gui_operator_dropdown.Choose(1)
   UpdateGuiOperatorCombination()
+
+  recruit_tool_gui.AddText("ym", "Other possible operators")
+  gui_other_possible_operators := recruit_tool_gui.AddListBox('r6')
+  UpdateOtherPossibleOperators(*) {
+    gui_other_possible_operators.Delete()
+    gui_other_possible_operators.Add(operator_map[gui_operator_dropdown.Text].others)
+  }
+  gui_operator_dropdown.OnEvent('Change', UpdateOtherPossibleOperators)
+  UpdateOtherPossibleOperators()
 
   recruit_tool_gui.Show()
 }
@@ -139,6 +153,10 @@ class Operator {
         return false
 
     return true
+  }
+
+  ToString() {
+    return Format("{}★ - {}", this.rarity, this.name)
   }
 }
 
