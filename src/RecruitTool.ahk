@@ -17,7 +17,6 @@ class RecruitToolConst {
   static TAG_WIDTH := 145
 }
 
-
 RecruitTool() {
   tags := ReadRecruitTags()
   matches := MatchRecruitTags(tags)
