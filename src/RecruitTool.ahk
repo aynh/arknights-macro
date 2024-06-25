@@ -43,19 +43,39 @@ RecruitTool() {
     }
   }
 
+  for operator_name in operator_map {
+    value := operator_map.Delete(operator_name)
+    operator_map.Set(
+      Format("{} ({:.0f}%)", operator_name, 1 / (value.others.Length + 1) * 100),
+      value
+    )
+  }
+
+  CompareOperator(a, b, *) {
+    a := operator_map[a]
+    b := operator_map[b]
+
+    ; sort operator with higher chance first
+    rate_delta := a.others.Length - b.others.length
+    if rate_delta != 0
+      return rate_delta
+    ; then group them if their combination is the same
+    else if a.combination != b.combination
+      return -1
+    else
+      return 0
+  }
+
   recruit_tool_gui := Gui("AlwaysOnTop -MinimizeBox", "RecruitTool")
 
-  recruit_tool_gui.AddText(, "Guaranteed operator list")
+  recruit_tool_gui.AddText(, "Operator list")
   gui_operator_dropdown := recruit_tool_gui.AddDropDownList(
     'Choose1',
     StrSplit(
       Sort(
-        ArrayJoin( ; Sort uses string for some reason
-          [operator_map*], '|'
-        ),
-        'RN D|' ; use reversed numeric sort and | as delimiter
-      ),
-      '|'
+        ArrayJoin([operator_map*], '|'),
+        'D|', CompareOperator
+      ), '|'
     )
   )
 
