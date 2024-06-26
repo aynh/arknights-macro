@@ -24,6 +24,59 @@ RecruitTool() {
   if matches.Length == 0
     return
 
+  operator_map := BuildOperatorMap(tags, matches)
+  operator_map_keys := SortedOperatorMapKeys(operator_map)
+
+  _gui := Gui("AlwaysOnTop -MinimizeBox", "RecruitTool")
+
+  _gui.AddText(, "Operator list")
+  _gui_operator_list := _gui.AddDropDownList('Choose1', operator_map_keys)
+
+  _gui.AddText(, "Tags combination")
+  _gui_tags_combination := _gui.AddListBox('r3')
+  UpdateTagsCombination(*) {
+    _gui_tags_combination.Delete()
+    _gui_tags_combination.Add(operator_map[_gui_operator_list.Text].combination)
+  }
+  _gui_operator_list.OnEvent('Change', UpdateTagsCombination)
+  UpdateTagsCombination()
+
+  _gui.AddText("ym", "Other possible operators")
+  _gui_other_possible_operators := _gui.AddListBox('r6')
+  UpdateOtherPossibleOperators(*) {
+    _gui_other_possible_operators.Delete()
+    _gui_other_possible_operators.Add(operator_map[_gui_operator_list.Text].others)
+  }
+  _gui_operator_list.OnEvent('Change', UpdateOtherPossibleOperators)
+  UpdateOtherPossibleOperators()
+
+  _gui.Show()
+}
+
+SortedOperatorMapKeys(operator_map) {
+  CompareOperator(a, b, *) {
+    a := operator_map[a]
+    b := operator_map[b]
+
+    ; sort them by their rarity
+    ; (higher rarity first)
+    if a.rarity != b.rarity
+      return b.rarity - a.rarity
+    ; then sort them by their drop rate
+    ; (higher drop chance first)
+    else if a.others.Length != b.others.Length
+      return a.others.Length - b.others.Length
+    ; then sort (group) them by their combination
+    else if a.combination != b.combination
+      return StrCompare(ArrayJoin(a.combination), ArrayJoin(b.combination))
+  }
+
+  joined := ArrayJoin([operator_map*], '|')
+  sorted := Sort(joined, 'D|', CompareOperator)
+  return StrSplit(sorted, '|')
+}
+
+BuildOperatorMap(tags, matches) {
   operator_map := Map()
   for match in matches {
     combination_tags := []
@@ -47,62 +100,14 @@ RecruitTool() {
   }
 
   for operator_name in operator_map {
-    value := operator_map.Delete(operator_name)
+    operator_data := operator_map.Delete(operator_name)
     operator_map.Set(
-      Format("{} ({:.0f}%)", operator_name, 1 / (value.others.Length + 1) * 100),
-      value
+      Format("{} ({:.0f}%)", operator_name, 1 / (operator_data.others.Length + 1) * 100),
+      operator_data
     )
   }
 
-  CompareOperator(a, b, *) {
-    a := operator_map[a]
-    b := operator_map[b]
-
-    ; sort them by their rarity
-    ; (higher rarity first)
-    if a.rarity != b.rarity
-      return b.rarity - a.rarity
-    ; then sort them by their drop rate
-    ; (higher drop chance first)
-    else if a.others.Length != b.others.Length
-      return a.others.Length - b.others.Length
-    ; then sort (group) them by their combination
-    else if a.combination != b.combination
-      return StrCompare(ArrayJoin(a.combination), ArrayJoin(b.combination))
-  }
-
-  recruit_tool_gui := Gui("AlwaysOnTop -MinimizeBox", "RecruitTool")
-
-  recruit_tool_gui.AddText(, "Operator list")
-  gui_operator_dropdown := recruit_tool_gui.AddDropDownList(
-    'Choose1',
-    StrSplit(
-      Sort(
-        ArrayJoin([operator_map*], '|'),
-        'D|', CompareOperator
-      ), '|'
-    )
-  )
-
-  recruit_tool_gui.AddText(, "Tags combination")
-  gui_operator_combination := recruit_tool_gui.AddListBox('r3')
-  UpdateGuiOperatorCombination(*) {
-    gui_operator_combination.Delete()
-    gui_operator_combination.Add(operator_map[gui_operator_dropdown.Text].combination)
-  }
-  gui_operator_dropdown.OnEvent('Change', UpdateGuiOperatorCombination)
-  UpdateGuiOperatorCombination()
-
-  recruit_tool_gui.AddText("ym", "Other possible operators")
-  gui_other_possible_operators := recruit_tool_gui.AddListBox('r6')
-  UpdateOtherPossibleOperators(*) {
-    gui_other_possible_operators.Delete()
-    gui_other_possible_operators.Add(operator_map[gui_operator_dropdown.Text].others)
-  }
-  gui_operator_dropdown.OnEvent('Change', UpdateOtherPossibleOperators)
-  UpdateOtherPossibleOperators()
-
-  recruit_tool_gui.Show()
+  return operator_map
 }
 
 MatchRecruitTags(tags) {
@@ -114,7 +119,7 @@ combination_loop:
     for idx in combination_idx
       combination_tags.Push tags[idx]
 
-    has_robot := ArrayIncludes(combination_tags, 'robot')
+    robot_tag := ArrayIncludes(combination_tags, 'robot')
 
     combination_operators := []
     combination_min_rarity := RecruitToolConst.MAX_RARITY
@@ -124,12 +129,15 @@ combination_loop:
           operator.rarity < RecruitToolConst.MIN_RARITY
           && operator.rarity != 1
         ) {
-          ; skip this combination if there's
-          ; an operator with rarity below the minimum
+          ; skip this combination if there's an operator
+          ; with rarity below the min_rarity constant
+          ; (except for the robots)
           continue combination_loop
         } else if (
           operator.rarity <= combination_min_rarity
-          && (has_robot || operator.rarity != 1)
+          ; the expression below ensures that 1★ (typically robot)
+          ; only get added if there's a robot tag
+          && (robot_tag || operator.rarity != 1)
         ) {
           combination_min_rarity := operator.rarity
           combination_operators.Push operator
