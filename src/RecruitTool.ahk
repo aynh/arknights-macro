@@ -181,7 +181,7 @@ class Operator {
   }
 
   ToString() {
-    return Format("{}★ - {}", this.rarity, this.name)
+    return Format("{}★ {}", this.rarity, this.name)
   }
 }
 
