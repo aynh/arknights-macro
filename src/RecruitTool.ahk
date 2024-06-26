@@ -123,7 +123,7 @@ combination_loop:
           continue combination_loop
         } else if (
           operator.rarity <= combination_min_rarity
-          || (has_robot && operator.rarity == 1)
+          && (has_robot || operator.rarity != 1)
         ) {
           combination_min_rarity := operator.rarity
           combination_operators.Push operator
