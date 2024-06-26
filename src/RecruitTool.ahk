@@ -37,7 +37,11 @@ RecruitTool() {
           others.Push other_operator.ToString()
 
       operator_map.Set(
-        operator.ToString(), { combination: combination_tags, others: others }
+        operator.ToString(), {
+          combination: combination_tags,
+          others: others,
+          rarity: operator.rarity,
+        }
       )
     }
   }
@@ -54,15 +58,17 @@ RecruitTool() {
     a := operator_map[a]
     b := operator_map[b]
 
-    ; sort operator with higher chance first
-    rate_delta := a.others.Length - b.others.length
-    if rate_delta != 0
-      return rate_delta
-    ; then group them if their combination is the same
+    ; sort them by their rarity
+    ; (higher rarity first)
+    if a.rarity != b.rarity
+      return b.rarity - a.rarity
+    ; then sort them by their drop rate
+    ; (higher drop chance first)
+    else if a.others.Length != b.others.Length
+      return a.others.Length - b.others.Length
+    ; then sort (group) them by their combination
     else if a.combination != b.combination
-      return -1
-    else
-      return 0
+      return StrCompare(ArrayJoin(a.combination), ArrayJoin(b.combination))
   }
 
   recruit_tool_gui := Gui("AlwaysOnTop -MinimizeBox", "RecruitTool")
