@@ -1,24 +1,23 @@
 #Requires AutoHotkey v2.0
 
+#Include Adb.ahk
 #Include Helper.ahk
-
-#Include <OCR>
 
 class RecruitToolConst {
   statiC MAX_RARITY := 6
-  static MIN_RARITY := 4
+  static MIN_RARITY := 3
 
   static TAGS_TOP_LEFT_XY := [
-    [410, 390], [585, 390], [765, 390],
-    [410, 465], [585, 465],
+    [375, 360], [540, 360], [710, 360],
+    [375, 435], [540, 435],
   ]
 
-  static TAG_HEIGHT := 45
   static TAG_WIDTH := 145
+  static TAG_HEIGHT := 45
 }
 
 RecruitTool() {
-  tags := ReadRecruitTags()
+  tags := GetRecruitTags()
   matches := MatchRecruitTags(tags)
 
   if matches.Length == 0
@@ -152,18 +151,19 @@ combination_loop:
   return matches
 }
 
-ReadRecruitTags() {
+GetRecruitTags() {
   tags := []
   for xy in RecruitToolConst.TAGS_TOP_LEFT_XY {
-    tag := OCR.FromRect(
-      xy[1], xy[2],
-      RecruitToolConst.TAG_WIDTH, RecruitToolConst.TAG_HEIGHT,
-      'en-US', 2.5
-    ).Text
+    tag := Adb.OCR_Region(
+      [
+        xy[1], xy[2],
+        RecruitToolConst.TAG_WIDTH, RecruitToolConst.TAG_HEIGHT
+      ], 2.5
+    )
     ; alter the tag a little for consistency with aceship data
     tag := StrReplace(tag, '-', ' ')
     tag := StrLower(tag)
-    tags.Push tag
+    tags.Push(tag)
   }
 
   return tags

@@ -1,3 +1,6 @@
 [submodule "ocr"]
 	path = submodules/OCR
 	url = https://github.com/Descolada/OCR.git
+[submodule "imageput"]
+	path = submodules/ImagePut
+	url = https://github.com/iseahound/ImagePut

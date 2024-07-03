@@ -1,12 +1,12 @@
 #Requires AutoHotkey v2.0
 
-#Include Helper.ahk
+#Include Adb.ahk
 
 RepeatVisit() {
   idx := 1
   while idx < 10 {
     Sleep(2000)
-    if ClickImage('visit-next', [1160, 620, 1360, 720])
+    if Adb.ClickImage('visit-next', [1090, 580, 185, 100])
       idx += 1
   }
 }
