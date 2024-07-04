@@ -3,27 +3,21 @@
 #Include Adb.ahk
 
 StartAnnihilation() {
-  Adb.ClickAnyImage(['start-annihilation-1'], [1040, 640, 200, 40])
-  Adb.ClickAnyImage(['start-annihilation-2'], [1040, 640, 200, 40])
+  Adb.ClickImage(['start-annihilation-1'], [1040, 640, 200, 40])
+  Adb.ClickImage(['start-annihilation-2'], [1040, 640, 200, 40])
 }
 
 StartStage() {
-  Adb.ClickAnyImage(["start-1a", "start-1b", "start-1c"], [1040, 640, 200, 40])
-  Adb.ClickAnyImage(["start-2a", "start-2b"], [1035, 370, 135, 280])
+  Adb.ClickImage(["start-1a", "start-1b", "start-1c"], [1040, 640, 200, 40])
+  Adb.ClickImage(["start-2a", "start-2b"], [1035, 370, 135, 280])
 }
 
 WaitUntilOperationComplete() {
   static OPERATION_COMPLETE_REGION := [60, 175, 220, 80]
 
-  loop {
-    if Adb.OCR_Region(OPERATION_COMPLETE_REGION) == "OPERATION COMPLETE" {
-      Sleep(3000) ; wait for the dialogue to finist
-      Adb.ClickRegion(OPERATION_COMPLETE_REGION)
-      break
-    }
-
-    Sleep(3000)
-  }
+  Adb.OCR_Click(OPERATION_COMPLETE_REGION, "OPERATION COMPLETE",
+    , 3000 ; add delay to wait for the dialoge to finish
+  )
 }
 
 RepeatAnnihilation() {
@@ -52,16 +46,16 @@ RepeatStage() {
 }
 
 GetCurrentSanity() {
-  static SANITY_REGION := [1115, 15, 120, 50]
+  static SANITY_REGION := [1130, 20, 110, 40]
 
-  sanity_and_max_sanity := Adb.OCR_Region(SANITY_REGION, 4)
-  sanity := StrSplit(sanity_and_max_sanity)[1]
+  sanity_and_max_sanity := Adb.OCR(SANITY_REGION, 2.5)
+  sanity := StrSplit(sanity_and_max_sanity, "/")[1]
   return Number(sanity)
 }
 
 GetStageCost() {
   static STAGE_COST_REGION := [1185, 690, 45, 25]
 
-  stage_cost := -Number(Adb.OCR_Region(STAGE_COST_REGION, 4))
+  stage_cost := -Number(Adb.OCR(STAGE_COST_REGION, 2.5))
   return stage_cost
 }

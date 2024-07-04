@@ -18,7 +18,7 @@ Do(task) {
   if !is_running {
     is_running := true
     task()
-    TrayTip(Format("{} is finished", task.Name), A_ScriptName, 0x1 + 0x10)
+    TrayTip(Format("{} is finished", task.Name), , 0x1 + 0x10)
     is_running := false
   }
 }

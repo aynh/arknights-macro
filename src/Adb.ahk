@@ -6,54 +6,57 @@
 #Include Helper.ahk
 
 class Adb {
-  static device := ""
-  static ready := false
+  static connected := false
+  static device := "127.0.0.1:5555"
 
-  static Setup(device := "127.0.0.1:5555") {
-    OnExit((*) => Adb.Cleanup())
-    this.ready := true
-    this.Run("kill-server")
+  static Setup(device := this.device) {
+    if !this.connected {
+      this.Run("kill-server", true)
+      this.Run("start-server", true)
 
-    this.Run(Format("connect {}", device))
-    this.device := device
+      ; findstr will succeeds if it finds the word "connected"
+      this.RunUntilSuccess(Format('connect {} | findstr "\connected\>"', this.device), true)
+      this.connected := true
 
-    this.Run("shell wm 1280x720")
-    this.Run("shell media volume --set 0")
+      this.Run("shell wm 1280x720")
+      this.Run("shell media volume --set 0")
+    }
   }
 
-  static Cleanup() {
-    this.Run("shell wm reset")
-    this.Run("shell media volume --set 10")
-    this.Run(Format("disconnect {}", this.device))
-    this.Run("kill-server")
-  }
-
-  static Run(command) {
-    if !this.ready
+  static Run(command, is_setup := false) {
+    if !this.connected && !is_setup
       this.Setup()
 
     shell := ComObject("Wscript.Shell")
-    if this.device == ""
-      shell.Run(Format("{} /C adb.exe {}", A_ComSpec, command), 0, true)
+    if this.connected
+      ; 0 = run with hidden window, true: wait until the program finishes then return the program exit code
+      return shell.Run(Format("{} /C adb.exe -s {} {}", A_ComSpec, this.device, command), 0, true)
     else
-      shell.Run(Format("{} /C adb.exe -s {} {}", A_ComSpec, this.device, command), 0, true)
+      return shell.Run(Format("{} /C adb.exe {}", A_ComSpec, command), 0, true)
+  }
+
+  ; variant of Run that will keep trying until it gets no error code
+  static RunUntilSuccess(command, is_setup?) {
+    ; while return code is non-zero:
+    while this.Run(command, is_setup?)
+      Sleep(3000)
   }
 
   static Click(X, Y) {
     this.Run(Format("shell input tap {} {}", X, Y))
   }
 
+  ; screenshot the android device, optionally cropping the image with region if specified
+  static TMP_IMAGE_PATH := Format("{}/screenshot.png", A_Temp)
   static Screenshot(region := []) {
-    TMP_IMAGE_PATH := Format("{}/screenshot.png", A_Temp)
-
-    this.Run(Format("exec-out screencap -p > {}", TMP_IMAGE_PATH))
+    this.Run(Format("exec-out screencap -p > {}", this.TMP_IMAGE_PATH))
 
     if region.Length != 4
-      buf := ImagePutBuffer({ file: TMP_IMAGE_PATH })
+      buf := ImagePutBuffer({ file: this.TMP_IMAGE_PATH })
     else {
       UnpackRegionArray(region, &X1, &Y1, &W, &H)
       buf := ImagePutBuffer({
-        file: TMP_IMAGE_PATH,
+        file: this.TMP_IMAGE_PATH,
         crop: [X1, Y1, W, H]
       })
     }
@@ -61,19 +64,26 @@ class Adb {
     return buf
   }
 
-  static ClickAnyImage(filenames, region) {
-    idx := 0
-    loop {
-      if this.ClickImage(
-        filenames[Mod(idx, filenames.Length) + 1], region
-      ) {
+  ; variant of TryClickImage that loop indefinitely until
+  ; it clicks on any of the image specified
+  static ClickImage(filename_or_filenames, region) {
+    loop
+      if this.TryClickImage(filename_or_filenames, region)
         break
-      }
-      idx += 1
-    }
   }
 
-  static ClickImage(filename, region) {
+
+  ; click image with filename around region
+  ; return true if the image is found and thus clicked
+  static TryClickImage(filename_or_filenames, region) {
+    if filename_or_filenames is Array {
+      for filename in filename_or_filenames
+        if this.TryClickImage(filename, region)
+          return true
+
+      return false
+    }
+
     UnpackRegionArray(region, &X1, &Y1, &W, &H)
     screenshot := this.Screenshot(
       ; only get screenshot around the region
@@ -82,7 +92,7 @@ class Adb {
 
     Sleep(1000)
     if screenshot.ImageSearch({
-      file: Format("../assets/images/{}.png", filename)
+      file: Format("../assets/images/{}.png", filename_or_filenames)
     }) {
       this.ClickRegion(region)
       return true
@@ -96,9 +106,19 @@ class Adb {
     this.Click(X1 + W / 2, Y1 + H / 2) ; clicks the middle of region
   }
 
-  static OCR_Region(region, scale := 1) {
+  static OCR(region, scale := 1) {
     screenshot := this.Screenshot(region)
     hBitmap := ImagePutHBitmap({ buffer: screenshot, scale: scale })
     return OCR.FromBitmap(hBitmap, 'en-US').Text
+  }
+
+  ; variant of OCR that keeps running until result == match
+  ; then click the region afterwards
+  static OCR_Click(region, match, scale?, delay := 0) {
+    while this.OCR(region, scale?) != match
+      Sleep(3000)
+
+    Sleep(delay)
+    this.ClickRegion(region)
   }
 }

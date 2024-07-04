@@ -154,7 +154,7 @@ combination_loop:
 GetRecruitTags() {
   tags := []
   for xy in RecruitToolConst.TAGS_TOP_LEFT_XY {
-    tag := Adb.OCR_Region(
+    tag := Adb.OCR(
       [
         xy[1], xy[2],
         RecruitToolConst.TAG_WIDTH, RecruitToolConst.TAG_HEIGHT
