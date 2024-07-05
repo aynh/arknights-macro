@@ -10,17 +10,16 @@ class Adb {
   static device := "127.0.0.1:5555"
 
   static Setup(device := this.device) {
-    if !this.connected {
-      this.Run("kill-server", true)
-      this.Run("start-server", true)
-
-      ; findstr will succeeds if it finds the word "connected"
-      this.RunUntilSuccess(Format('connect {} | findstr "\connected\>"', this.device), true)
-      this.connected := true
-
-      this.Run("shell wm 1280x720")
-      this.Run("shell media volume --set 0")
+    while not (
+      this.connected := this.Run(
+        Format('devices | findstr "\{}\>" | findstr "\device\>"', device), true
+      )
+    ) {
+      this.Run(Format("connect {}", device), true)
+      Sleep(1000)
     }
+
+    this.device := device
   }
 
   static Run(command, is_setup := false) {
@@ -30,26 +29,27 @@ class Adb {
     shell := ComObject("Wscript.Shell")
     if this.connected
       ; 0 = run with hidden window, true: wait until the program finishes then return the program exit code
-      return shell.Run(Format("{} /C adb.exe -s {} {}", A_ComSpec, this.device, command), 0, true)
+      exit_code := shell.Run(Format("{} /C adb.exe -s {} {}", A_ComSpec, this.device, command), 0, true)
     else
-      return shell.Run(Format("{} /C adb.exe {}", A_ComSpec, command), 0, true)
+      exit_code := shell.Run(Format("{} /C adb.exe {}", A_ComSpec, command), 0, true)
+
+    ; exit code of 0 means success
+    return exit_code == 0
   }
 
-  ; variant of Run that will keep trying until it gets no error code
-  static RunUntilSuccess(command, is_setup?) {
-    ; while return code is non-zero:
-    while this.Run(command, is_setup?)
-      Sleep(3000)
-  }
-
-  static Click(X, Y) {
-    this.Run(Format("shell input tap {} {}", X, Y))
+  static Click(XY*) {
+    this.Run(Format("shell input tap {} {}", XY[1], XY[2]))
   }
 
   ; screenshot the android device, optionally cropping the image with region if specified
   static TMP_IMAGE_PATH := Format("{}/screenshot.png", A_Temp)
-  static Screenshot(region := []) {
-    this.Run(Format("exec-out screencap -p > {}", this.TMP_IMAGE_PATH))
+  static Screenshot(region := [], retake := true) {
+    static should_retake := true
+    if should_retake || retake {
+      should_retake := false
+      this.Run(Format("exec-out screencap -p > {}", this.TMP_IMAGE_PATH))
+      SetTimer(() => should_retake := true, -5000)
+    }
 
     if region.Length != 4
       buf := ImagePutBuffer({ file: this.TMP_IMAGE_PATH })
@@ -84,16 +84,7 @@ class Adb {
       return false
     }
 
-    UnpackRegionArray(region, &X1, &Y1, &W, &H)
-    screenshot := this.Screenshot(
-      ; only get screenshot around the region
-      [X1 - 10, Y1 - 10, W + 10, H + 10]
-    )
-
-    Sleep(1000)
-    if screenshot.ImageSearch({
-      file: Format("../assets/images/{}.png", filename_or_filenames)
-    }) {
+    if this.ImageSearch(region, filename_or_filenames) {
       this.ClickRegion(region)
       return true
     }
@@ -101,13 +92,26 @@ class Adb {
     return false
   }
 
+  static ImageSearch(region, filename) {
+    Sleep(1000)
+    UnpackRegionArray(region, &X1, &Y1, &W, &H)
+    screenshot := this.Screenshot(
+      ; only get screenshot around the region
+      [X1 - 10, Y1 - 10, W + 10, H + 10]
+    )
+
+    return screenshot.ImageSearch({
+      file: Format("../assets/images/{}.png", filename)
+    })
+  }
+
   static ClickRegion(region) {
     UnpackRegionArray(region, &X1, &Y1, &W, &H)
     this.Click(X1 + W / 2, Y1 + H / 2) ; clicks the middle of region
   }
 
-  static OCR(region, scale := 1) {
-    screenshot := this.Screenshot(region)
+  static OCR(region, scale := 1, retake_screenshot := false) {
+    screenshot := this.Screenshot(region, retake_screenshot)
     hBitmap := ImagePutHBitmap({ buffer: screenshot, scale: scale })
     return OCR.FromBitmap(hBitmap, 'en-US').Text
   }
@@ -115,8 +119,8 @@ class Adb {
   ; variant of OCR that keeps running until result == match
   ; then click the region afterwards
   static OCR_Click(region, match, scale?, delay := 0) {
-    while this.OCR(region, scale?) != match
-      Sleep(3000)
+    while this.OCR(region, scale?, true) != match
+      Sleep(1000)
 
     Sleep(delay)
     this.ClickRegion(region)
