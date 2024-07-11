@@ -116,6 +116,16 @@ class Adb {
     return OCR.FromBitmap(hBitmap, 'en-US').Text
   }
 
+  ; variant of OCR that keeps running until it gets non-empty value
+  static OCR_NonEmpty(region, scale?) {
+    loop {
+      if value := this.OCR(region, scale?, true)
+        return value
+
+      Sleep(1000)
+    }
+  }
+
   ; variant of OCR that keeps running until result == match
   ; then click the region afterwards
   static OCR_Click(region, match, scale?, delay := 0) {
