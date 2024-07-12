@@ -41,6 +41,10 @@ class Adb {
     this.Run(Format("shell input tap {} {}", XY[1], XY[2]))
   }
 
+  static PressBack() {
+    this.Run("shell input keyevent 4")
+  }
+
   ; screenshot the android device, optionally cropping the image with region if specified
   static TMP_IMAGE_PATH := Format("{}/screenshot.png", A_Temp)
   static Screenshot(region := [], retake := true) {

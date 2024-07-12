@@ -27,24 +27,24 @@ LoopStageAuto() {
     sanity := GetCurrentSanity()
     if sanity < stage_cost {
       Adb.Click(START_STAGE_XY*)
-      if !TryUsePotion()
+      if !TryRestoreSanity("potion")
         break
 
       continue
     }
 
-    StartStageAuto(sanity, stage_cost)
+    DoStageAuto(sanity, stage_cost)
   }
 }
 
-StartStageAuto(sanity, stage_cost) {
+DoStageAuto(sanity, stage_cost) {
   loop 6 {
     ; loop through 6 to 1 to get maximum sanity spent
     multiplier := 7 - A_Index
     if (multiplier * stage_cost) <= sanity {
       ChangeStageMultiplier(multiplier)
-      LoopStage(1, "normal")
-      break
+      DoStage("normal")
+      return
     }
   }
 }
@@ -77,44 +77,34 @@ ChangeStageMultiplier(value) {
 
 LoopStage(count, kind) {
   loop count {
-    switch kind {
-      case "normal":
-        Start1 := () => Adb.ClickImage(["start-1a", "start-1b", "start-1c"], [1040, 640, 200, 40])
-        Start2 := () => Adb.ClickImage(["start-2a", "start-2b"], [1035, 370, 135, 280])
-      case "annihilation":
-        Start1 := () => Adb.ClickImage(['start-annihilation-1'], [1040, 640, 200, 40])
-        Start2 := () => Adb.ClickImage(['start-annihilation-2'], [1040, 640, 200, 40])
-      default:
-        return
-    }
-
-    Start1()
-    if !TryUsePotion()
+    if !DoStage(kind)
       return
-    Start2()
-
-    WaitUntilOperationComplete()
   }
 }
 
-; try to use sanity potion
-; return false if it asks to use originite prime, otherwise return true
-TryUsePotion() {
-  static RESTORE_POTION_REGION := [695, 80, 205, 45]
-  static RESTORE_ORIGINITE_PRIME_REGION := [1005, 80, 250, 45]
-  static CONFIRM_BUTTON_XY := [1090, 575]
-  static CANCEL_BUTTON_XY := [780, 580]
-
-  switch {
-    case Adb.ImageSearch(RESTORE_POTION_REGION, "restore-potion"):
-      Adb.Click(CONFIRM_BUTTON_XY*)
-      return true
-    case Adb.ImageSearch(RESTORE_ORIGINITE_PRIME_REGION, "restore-originite-prime"):
-      Adb.Click(CANCEL_BUTTON_XY*)
-      return false
+DoStage(kind) {
+  switch kind {
+    case "annihilation":
+      Start1 := () => Adb.ClickImage(['start-annihilation-1'], [1040, 640, 200, 40])
+      Start2 := () => Adb.TryClickImage(['start-annihilation-2'], [1040, 640, 200, 40])
+    case "normal":
+      Start1 := () => Adb.ClickImage(["start-1a", "start-1b", "start-1c"], [1040, 640, 200, 40])
+      Start2 := () => Adb.TryClickImage(["start-2a", "start-2b"], [1035, 370, 135, 280])
     default:
-      return true
+      return
   }
+
+  Start1()
+  if (
+    !Start2() ; if the image is not found
+    && CheckRestoreSanityMenu() ; and restore sanity menu is showed
+  ) {
+    Adb.PressBack()
+    return false
+  }
+
+  WaitUntilOperationComplete()
+  return true
 }
 
 WaitUntilOperationComplete() {
@@ -123,4 +113,39 @@ WaitUntilOperationComplete() {
   Adb.OCR_Click(OPERATION_COMPLETE_REGION, "OPERATION COMPLETE",
     , 3000 ; add delay to wait for the dialoge to finish
   )
+}
+
+; restore sanity with (potion|originite prime)
+; return false if there is no 'with' to use
+; otherwise return true
+TryRestoreSanity(with) {
+  static CONFIRM_RESTORE_BUTTON_XY := [1090, 575]
+
+  if view := CheckRestoreSanityMenu() {
+    if view != with {
+      Adb.PressBack()
+      return false
+    }
+
+    Adb.Click(CONFIRM_RESTORE_BUTTON_XY*)
+  }
+
+  return true
+}
+
+; check if we're currently viewing restore sanity menu
+; return either 'potion' or 'originite prime' depending on which menu is showed
+; otherwise return false if neither is showed
+CheckRestoreSanityMenu() {
+  static RESTORE_POTION_REGION := [695, 80, 205, 45]
+  static RESTORE_ORIGINITE_PRIME_REGION := [1005, 80, 250, 45]
+
+  switch {
+    case Adb.ImageSearch(RESTORE_POTION_REGION, "restore-potion"):
+      return "potion"
+    case Adb.ImageSearch(RESTORE_ORIGINITE_PRIME_REGION, "restore-originite-prime"):
+      return "originite prime"
+    default:
+      return false
+  }
 }
