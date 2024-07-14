@@ -8,7 +8,6 @@
 
 #HotIf WinExist('LDPlayer ahk_exe dnplayer.exe')
 #1:: Do(RepeatStage) ; WIN + 1
-<+#1:: Do(RepeatAnnihilation) ; LSHIFT + WIN + 1
 #2:: Do(RepeatVisit) ; WIN + 2
 #3:: Do(RecruitTool) ; WIN + 3
 #Escape:: Reload() ; WIN + Esc

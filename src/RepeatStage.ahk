@@ -2,22 +2,53 @@
 
 #Include Adb.ahk
 
-RepeatAnnihilation() {
-  LoopStage(5, "annihilation")
-}
-
 RepeatStage() {
-  prompt := InputBox(, "RepeatStage", "w150 h75")
-  if prompt.Result != "OK"
-    return
+  _gui := Gui("AlwaysOnTop -MinimizeBox", "RepeatStage")
 
-  if prompt.Value == ""
-    LoopStageAuto()
-  else if IsNumber(prompt.Value)
-    LoopStage(Number(prompt.Value), "normal")
+  _gui.AddText(, "stage type")
+  _gui.AddDropDownList("vstage_type Choose2 w80", ["annihilation", "normal"])
+
+  _gui.AddText(, "count")
+  _gui.AddEdit("vloop_count Number w48", "1")
+  _gui.AddCheckbox("vloop_auto yp x+12 hp", "auto")
+  _gui.AddCheckbox("vuse_potion Checked xm y+8", "use sanity potions")
+
+  _gui.AddButton("vstart_button xm-2 y+12", "start")
+
+  StageTypeOnChange(*) {
+    switch _gui["stage_type"].Text {
+      case "annihilation":
+        _gui["loop_count"].Enabled := _gui["loop_auto"].Enabled := _gui["use_potion"].Enabled := false
+      case "normal":
+        _gui["loop_count"].Enabled := _gui["loop_auto"].Enabled := _gui["use_potion"].Enabled := true
+    }
+  }
+  _gui["stage_type"].OnEvent("Change", StageTypeOnChange)
+
+  LoopAutoOnClick(*) {
+    _gui["loop_count"].Enabled := !_gui["loop_auto"].Value
+  }
+  _gui["loop_auto"].OnEvent("Click", LoopAutoOnClick)
+
+  StartButtonOnClick(*) {
+    options := _gui.Submit()
+    switch options.stage_type {
+      case "annihilation":
+        LoopStage(5, "annihilation", options.use_potion)
+      case "normal":
+        if options.loop_auto
+          LoopStageAuto(options.use_potion)
+        else
+          LoopStage(Number(options.loop_count), "normal", options.use_potion)
+    }
+  }
+  _gui["start_button"].OnEvent("Click", StartButtonOnClick)
+
+  _gui.Show()
+  WinWaitClose(_gui.Hwnd)
 }
 
-LoopStageAuto() {
+LoopStageAuto(use_sanity_potions) {
   static START_STAGE_XY := [1140, 660]
 
   ChangeStageMultiplier(2)
@@ -26,6 +57,9 @@ LoopStageAuto() {
   loop {
     sanity := GetCurrentSanity()
     if sanity < stage_cost {
+      if !use_sanity_potions
+        break
+
       Adb.Click(START_STAGE_XY*)
       if !TryRestoreSanity("potion")
         break
@@ -43,7 +77,7 @@ DoStageAuto(sanity, stage_cost) {
     multiplier := 7 - A_Index
     if (multiplier * stage_cost) <= sanity {
       ChangeStageMultiplier(multiplier)
-      DoStage("normal")
+      DoStage("normal", false)
       return
     }
   }
@@ -75,14 +109,14 @@ ChangeStageMultiplier(value) {
   Adb.Click(SELECT_STAGE_MULTIPLIER_XY[value]*)
 }
 
-LoopStage(count, kind) {
+LoopStage(count, kind, use_sanity_potion) {
   loop count {
-    if !DoStage(kind)
+    if !DoStage(kind, use_sanity_potion)
       return
   }
 }
 
-DoStage(kind) {
+DoStage(kind, use_sanity_potion) {
   switch kind {
     case "annihilation":
       Start1 := () => Adb.ClickImage(['start-annihilation-1'], [1040, 640, 200, 40])
@@ -94,17 +128,19 @@ DoStage(kind) {
       return
   }
 
+
   Start1()
-  if (
-    !Start2() ; if the image is not found
-    && CheckRestoreSanityMenu() ; and restore sanity menu is showed
-  ) {
-    Adb.PressBack()
-    return false
+  if Start2() {
+    WaitUntilOperationComplete()
+    return true
   }
 
-  WaitUntilOperationComplete()
-  return true
+  if !use_sanity_potion
+    Adb.PressBack()
+  else if TryRestoreSanity("potion")
+    return DoStage(kind, use_sanity_potion)
+
+  return false
 }
 
 WaitUntilOperationComplete() {
