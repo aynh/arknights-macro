@@ -1,20 +1,7 @@
 #Requires AutoHotkey v2.0
 
 #Include Adb.ahk
-#Include Helper.ahk
-
-class RecruitToolConst {
-  statiC MAX_RARITY := 6
-  static MIN_RARITY := 3
-
-  static TAGS_TOP_LEFT_XY := [
-    [375, 360], [540, 360], [710, 360],
-    [375, 435], [540, 435],
-  ]
-
-  static TAG_WIDTH := 145
-  static TAG_HEIGHT := 45
-}
+#Include Utilities.ahk
 
 RecruitTool() {
   tags := GetRecruitTags()
@@ -23,33 +10,36 @@ RecruitTool() {
   if matches.Length == 0
     return
 
-  operator_map := BuildOperatorMap(tags, matches)
+  operator_map := GenerateOperatorMap(tags, matches)
   operator_map_keys := SortedOperatorMapKeys(operator_map)
 
-  _gui := Gui("AlwaysOnTop -MinimizeBox", "RecruitTool")
+  gui := RecruitToolGui(operator_map, operator_map_keys)
+  gui.Show()
+}
 
-  _gui.AddText(, "Operator list")
-  _gui_operator_list := _gui.AddDropDownList('Choose1', operator_map_keys)
+class RecruitToolGui extends Gui {
+  __New(operator_map, operator_map_keys) {
+    super.__New("AlwaysOnTop -MinimizeBox", "RecruitTool")
 
-  _gui.AddText(, "Tags combination")
-  _gui_tags_combination := _gui.AddListBox('r3')
-  UpdateTagsCombination(*) {
-    _gui_tags_combination.Delete()
-    _gui_tags_combination.Add(operator_map[_gui_operator_list.Text].combination)
+    this.AddText(, "Operator list")
+    this.AddDropDownList('voperator_combobox Choose1', operator_map_keys)
+
+    this.AddText(, "Tags combination")
+    this.AddListBox('vcombination r3')
+
+    this.AddText("ym", "Other possible operators")
+    this.AddListBox('vothers r6')
+
+    OperatorComboboxOnChange(*) {
+      selected := operator_map[this["operator_combobox"].Text]
+      this["combination"].Delete()
+      this["combination"].Add(selected.combination)
+      this["others"].Delete()
+      this["others"].Add(selected.others)
+    }
+    this["operator_combobox"].OnEvent('Change', OperatorComboboxOnChange)
+    OperatorComboboxOnChange()
   }
-  _gui_operator_list.OnEvent('Change', UpdateTagsCombination)
-  UpdateTagsCombination()
-
-  _gui.AddText("ym", "Other possible operators")
-  _gui_other_possible_operators := _gui.AddListBox('r6')
-  UpdateOtherPossibleOperators(*) {
-    _gui_other_possible_operators.Delete()
-    _gui_other_possible_operators.Add(operator_map[_gui_operator_list.Text].others)
-  }
-  _gui_operator_list.OnEvent('Change', UpdateOtherPossibleOperators)
-  UpdateOtherPossibleOperators()
-
-  _gui.Show()
 }
 
 SortedOperatorMapKeys(operator_map) {
@@ -57,17 +47,19 @@ SortedOperatorMapKeys(operator_map) {
     a := operator_map[a]
     b := operator_map[b]
 
-    ; sort them by their rarity
-    ; (higher rarity first)
-    if a.rarity != b.rarity
-      return b.rarity - a.rarity
-    ; then sort them by their drop rate
-    ; (higher drop chance first)
-    else if a.others.Length != b.others.Length
-      return a.others.Length - b.others.Length
-    ; then sort (group) them by their combination
-    else if a.combination != b.combination
-      return StrCompare(ArrayJoin(a.combination), ArrayJoin(b.combination))
+    switch {
+      ; sort them by their rarity
+      ; (higher rarity first)
+      case a.rarity != b.rarity:
+        return b.rarity - a.rarity
+        ; then sort them by their drop rate
+        ; (higher drop chance first)
+      case a.others.Length != b.others.Length:
+        return a.others.Length - b.others.Length
+        ; then sort (group) them by their combination
+      case a.combination != b.combination:
+        return StrCompare(ArrayJoin(a.combination), ArrayJoin(b.combination))
+    }
   }
 
   joined := ArrayJoin([operator_map*], '|')
@@ -75,73 +67,67 @@ SortedOperatorMapKeys(operator_map) {
   return StrSplit(sorted, '|')
 }
 
-BuildOperatorMap(tags, matches) {
+GenerateOperatorMap(tags, matches) {
   operator_map := Map()
   for match in matches {
     combination_tags := []
     for idx in match.combination
-      combination_tags.Push tags[idx]
+      combination_tags.Push(tags[idx])
 
     for idx, operator in match.operators {
       others := []
       for other_idx, other_operator in match.operators
         if other_idx != idx
-          others.Push other_operator.ToString()
+          others.Push(other_operator.ToString())
 
-      operator_map.Set(
-        operator.ToString(), {
-          combination: combination_tags,
-          others: others,
-          rarity: operator.rarity,
-        }
-      )
+      name := operator.ToString()
+      rate := 1 / (others.Length + 1) * 100
+      key := Format("{} ({:.0f}%)", name, rate)
+      operator_map[key] := {
+        combination: combination_tags,
+        others: others,
+        rarity: operator.rarity,
+      }
     }
-  }
-
-  for operator_name in operator_map {
-    operator_data := operator_map.Delete(operator_name)
-    operator_map.Set(
-      Format("{} ({:.0f}%)", operator_name, 1 / (operator_data.others.Length + 1) * 100),
-      operator_data
-    )
   }
 
   return operator_map
 }
 
 MatchRecruitTags(tags) {
+  statiC MAX_RARITY := 6
+  static MIN_RARITY := 3
+
   matches := []
 
 combination_loop:
   for combination_idx in RecruitToolData.combinations {
     combination_tags := []
     for idx in combination_idx
-      combination_tags.Push tags[idx]
+      combination_tags.Push(tags[idx])
 
     robot_tag := ArrayIncludes(combination_tags, 'robot')
 
     combination_operators := []
-    combination_min_rarity := RecruitToolConst.MAX_RARITY
-    for operator in RecruitToolData.operators
-      if operator.MatchCombination(combination_tags) {
-        if (
-          operator.rarity < RecruitToolConst.MIN_RARITY
-          && operator.rarity != 1
-        ) {
-          ; skip this combination if there's an operator
-          ; with rarity below the min_rarity constant
-          ; (except for the robots)
-          continue combination_loop
-        } else if (
-          operator.rarity <= combination_min_rarity
-          ; the expression below ensures that 1★ (typically robot)
-          ; only get added if there's a robot tag
-          && (robot_tag || operator.rarity != 1)
-        ) {
-          combination_min_rarity := operator.rarity
-          combination_operators.Push operator
-        }
+    combination_min_rarity := MAX_RARITY
+    for operator in RecruitToolData.operators {
+      if !operator.MatchCombination(combination_tags)
+        continue
+
+      if operator.rarity < MIN_RARITY && operator.rarity != 1
+        ; skip this combination if there's matching operator
+        ; with rarity below min_rarity (except for the 1★)
+        continue combination_loop
+      else if (
+        operator.rarity <= combination_min_rarity
+        ; the expression below ensures that 1★ (typically robot)
+        ; only get added if there's a robot tag
+        && (robot_tag || operator.rarity != 1)
+      ) {
+        combination_min_rarity := operator.rarity
+        combination_operators.Push(operator)
       }
+    }
 
     if combination_operators.Length > 0 {
       matches.Push({ combination: combination_idx, operators: combination_operators })
@@ -152,15 +138,19 @@ combination_loop:
 }
 
 GetRecruitTags() {
+  static TAGS_TOP_LEFT_XY := [
+    [375, 360], [540, 360], [710, 360],
+    [375, 435], [540, 435],
+  ]
+
+  static TAG_WIDTH := 145
+  static TAG_HEIGHT := 45
+
   tags := []
-  for xy in RecruitToolConst.TAGS_TOP_LEFT_XY {
-    tag := Adb.OCR(
-      [
-        xy[1], xy[2],
-        RecruitToolConst.TAG_WIDTH, RecruitToolConst.TAG_HEIGHT
-      ], 2.5
-    )
-    ; alter the tag a little for consistency with aceship data
+  for xy in TAGS_TOP_LEFT_XY {
+    tag := Adb.OCR([
+      xy[1], xy[2], TAG_WIDTH, TAG_HEIGHT
+    ], 2.5)
     tag := StrReplace(tag, '-', ' ')
     tag := StrLower(tag)
     tags.Push(tag)

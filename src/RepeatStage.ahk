@@ -3,49 +3,51 @@
 #Include Adb.ahk
 
 RepeatStage() {
-  _gui := Gui("AlwaysOnTop -MinimizeBox", "RepeatStage")
+  gui := RepeatStageGui()
+  gui.Show()
+  WinWaitClose(gui.Hwnd)
+}
 
-  _gui.AddText(, "stage type")
-  _gui.AddDropDownList("vstage_type Choose2 w80", ["annihilation", "normal"])
+class RepeatStageGui extends Gui {
+  __New() {
+    super.__New("AlwaysOnTop -MinimizeBox", "RepeatStage")
 
-  _gui.AddText(, "count")
-  _gui.AddEdit("vloop_count Number w48", "1")
-  _gui.AddCheckbox("vloop_auto yp x+12 hp", "auto")
-  _gui.AddCheckbox("vuse_potion Checked xm y+8", "use sanity potions")
+    this.AddText(, "stage type")
+    this.AddDropDownList("vstage_type Choose2 w80", ["annihilation", "normal"])
 
-  _gui.AddButton("vstart_button xm-2 y+12", "start")
+    this.AddText(, "count")
+    this.AddEdit("vloop_count Number w48", "1")
+    this.AddCheckbox("vloop_auto yp x+12 hp", "auto")
+    this.AddCheckbox("vuse_potion Checked xm y+8", "use sanity potions")
 
-  StageTypeOnChange(*) {
-    switch _gui["stage_type"].Text {
-      case "annihilation":
-        _gui["loop_count"].Enabled := _gui["loop_auto"].Enabled := _gui["use_potion"].Enabled := false
-      case "normal":
-        _gui["loop_count"].Enabled := _gui["loop_auto"].Enabled := _gui["use_potion"].Enabled := true
+    this.AddButton("vstart_button xm-2 y+12", "start")
+
+    StageTypeOnChange(*) {
+      switch this["stage_type"].Text {
+        case "annihilation":
+          this["loop_count"].Enabled := this["loop_auto"].Enabled := this["use_potion"].Enabled := false
+        case "normal":
+          this["loop_count"].Enabled := this["loop_auto"].Enabled := this["use_potion"].Enabled := true
+      }
     }
-  }
-  _gui["stage_type"].OnEvent("Change", StageTypeOnChange)
+    this["stage_type"].OnEvent("Change", StageTypeOnChange)
 
-  LoopAutoOnClick(*) {
-    _gui["loop_count"].Enabled := !_gui["loop_auto"].Value
-  }
-  _gui["loop_auto"].OnEvent("Click", LoopAutoOnClick)
+    this["loop_auto"].OnEvent("Click", (*) => this["loop_count"].Enabled := !this["loop_auto"].Value)
 
-  StartButtonOnClick(*) {
-    options := _gui.Submit()
-    switch options.stage_type {
-      case "annihilation":
-        LoopStage(5, "annihilation", options.use_potion)
-      case "normal":
-        if options.loop_auto
-          LoopStageAuto(options.use_potion)
-        else
-          LoopStage(Number(options.loop_count), "normal", options.use_potion)
+    StartButtonOnClick(*) {
+      options := this.Submit()
+      switch options.stage_type {
+        case "annihilation":
+          LoopStage(5, "annihilation", options.use_potion)
+        case "normal":
+          if options.loop_auto
+            LoopStageAuto(options.use_potion)
+          else
+            LoopStage(Number(options.loop_count), "normal", options.use_potion)
+      }
     }
+    this["start_button"].OnEvent("Click", StartButtonOnClick)
   }
-  _gui["start_button"].OnEvent("Click", StartButtonOnClick)
-
-  _gui.Show()
-  WinWaitClose(_gui.Hwnd)
 }
 
 LoopStageAuto(use_sanity_potions) {
@@ -146,9 +148,9 @@ DoStage(kind, use_sanity_potion) {
 WaitUntilOperationComplete() {
   static OPERATION_COMPLETE_REGION := [60, 175, 220, 80]
 
-  Adb.OCR_Click(OPERATION_COMPLETE_REGION, "OPERATION COMPLETE",
-    , 3000 ; add delay to wait for the dialoge to finish
-  )
+  Adb.OCR_WaitUntilMatch(OPERATION_COMPLETE_REGION, "OPERATION COMPLETE")
+  Sleep(3000) ; wait for the dialogue to finish
+  Adb.PressBack()
 }
 
 ; restore sanity with (potion|originite prime)

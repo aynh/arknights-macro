@@ -3,7 +3,7 @@
 #Include <ImagePut>
 #Include <OCR>
 
-#Include Helper.ahk
+#Include Utilities.ahk
 
 class Adb {
   static connected := false
@@ -58,10 +58,9 @@ class Adb {
     if region.Length != 4
       buf := ImagePutBuffer({ file: this.TMP_IMAGE_PATH })
     else {
-      UnpackRegionArray(region, &X1, &Y1, &W, &H)
       buf := ImagePutBuffer({
         file: this.TMP_IMAGE_PATH,
-        crop: [X1, Y1, W, H]
+        crop: region
       })
     }
 
@@ -75,7 +74,6 @@ class Adb {
       if this.TryClickImage(filename_or_filenames, region)
         break
   }
-
 
   ; click image with filename around region
   ; return true if the image is found and thus clicked
@@ -111,7 +109,7 @@ class Adb {
 
   static ClickRegion(region) {
     UnpackRegionArray(region, &X1, &Y1, &W, &H)
-    this.Click(X1 + W / 2, Y1 + H / 2) ; clicks the middle of region
+    this.Click(X1 + W / 2, Y1 + H / 2) ; click the middle of region
   }
 
   static OCR(region, scale := 1, retake_screenshot := false) {
@@ -131,12 +129,14 @@ class Adb {
   }
 
   ; variant of OCR that keeps running until result == match
-  ; then click the region afterwards
-  static OCR_Click(region, match, scale?, delay := 0) {
+  static OCR_WaitUntilMatch(region, match, scale?) {
     while this.OCR(region, scale?, true) != match
       Sleep(1000)
+  }
 
-    Sleep(delay)
+  ; variant of OCR that will click the region if the result matches
+  static OCR_Click(region, match, scale?) {
+    this.OCR_WaitUntilMatch(region, match, scale)
     this.ClickRegion(region)
   }
 }
