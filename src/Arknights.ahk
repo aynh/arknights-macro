@@ -11,15 +11,7 @@
 #2:: Do(RepeatVisit) ; WIN + 2
 #3:: Do(RecruitTool) ; WIN + 3
 #Escape:: Reload() ; WIN + Esc
-#`:: {
-  buf := Adb.Screenshot()
-  Run(Adb.TMP_IMAGE_PATH)
-  region := InputBox("region (comma separated)")
-  if region.Result == "OK"
-    ImagePutFile({
-      buffer: buf, crop: StrSplit(StrReplace(region.Value, " ", ""), ",")
-    }, FileSelect("S " 8 + 16, "../assets/images"))
-}
+#`:: ScreenshotArknights()
 
 StartArknights() {
   static ARKNIGHTS_PACKAGE_NAME := "com.YoStarEN.Arknights"
@@ -57,6 +49,38 @@ StartArknights() {
     WinActivate()
 }
 
+ScreenshotArknights() {
+  buf := Adb.Screenshot()
+
+  Run(Adb.TMP_IMAGE_PATH, , , &pid)
+  WinWait("ahk_pid " pid)
+  region_prompt := InputBox("region (comma separated)", , "w150 h90", A_Clipboard)
+  WinClose()
+
+  if region_prompt.Result != "OK"
+    return
+  else if region := region_prompt.Value {
+    A_Clipboard := region_prompt.Value
+    buf := ImagePutBuffer({
+      buffer: buf, crop: StrSplit(StrReplace(region, " ", ""), ",")
+    })
+  }
+
+  ImagePutFile(buf, Adb.TMP_IMAGE_PATH)
+  Run(Adb.TMP_IMAGE_PATH, , , &pid)
+  WinWait("ahk_pid " pid)
+
+  text := OCR.FromBitmap(ImagePutHBitmap(buf)).Text
+  if (
+    text != ""
+      ? MsgBox(text . "`n`nSave the image?", "OCR text", 0x4) == "Yes"
+      : MsgBox("Save the image?", , 0x4) == "Yes"
+  )
+    FileMove(Adb.TMP_IMAGE_PATH, FileSelect("S " 8 + 16, "../assets/images/image.png"))
+
+  WinClose()
+}
+
 Do(task) {
   static is_running := false
   if !is_running {
@@ -70,4 +94,5 @@ Do(task) {
 tray := A_TrayMenu
 tray.Delete()
 tray.Add("Start Arknights", (*) => StartArknights())
+tray.Add("Screenshot Arknights", (*) => ScreenshotArknights())
 tray.Add("Exit", (*) => ExitApp())
