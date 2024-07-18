@@ -121,17 +121,17 @@ LoopStage(count, kind, use_sanity_potion) {
 DoStage(kind, use_sanity_potion) {
   switch kind {
     case "annihilation":
-      Start1 := () => Adb.ClickImage(['start-annihilation-1'], [1040, 640, 200, 40])
-      Start2 := () => Adb.TryClickImage(['start-annihilation-2'], [1040, 640, 200, 40])
+      Start1 := () => Adb.OCR_Click([1150, 640, 90, 35], "Start")
+      Start2 := () => Adb.OCR_TryClick([1095, 645, 90, 35], "Confirm")
     case "normal":
-      Start1 := () => Adb.ClickImage(["start-1a", "start-1b", "start-1c"], [1040, 640, 200, 40])
-      Start2 := () => Adb.TryClickImage(["start-2a", "start-2b"], [1035, 370, 135, 280])
+      Start1 := () => Adb.OCR_Click([1150, 655, 90, 35], "Start")
+      Start2 := () => Adb.OCR_TryClick([1055, 520, 95, 40], "START")
     default:
       return
   }
 
-
   Start1()
+  Sleep(2000) ; wait for the menu to change
   if Start2() {
     WaitUntilOperationComplete()
     return true

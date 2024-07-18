@@ -136,7 +136,17 @@ class Adb {
 
   ; variant of OCR that will click the region if the result matches
   static OCR_Click(region, match, scale?) {
-    this.OCR_WaitUntilMatch(region, match, scale)
+    this.OCR_WaitUntilMatch(region, match, scale?)
     this.ClickRegion(region)
+  }
+
+  ; variant of OCR_Click that will return instead of
+  ; running indefinitely until it found a match
+  static OCR_TryClick(region, match, scale?) {
+    if this.OCR(region, scale?, true) != match
+      return false
+
+    this.ClickRegion(region)
+    return true
   }
 }
