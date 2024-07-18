@@ -93,6 +93,11 @@ Do(task) {
 
 tray := A_TrayMenu
 tray.Delete()
-tray.Add("Start Arknights", (*) => StartArknights())
-tray.Add("Screenshot Arknights", (*) => ScreenshotArknights())
+
+arknights_menu := Menu()
+arknights_menu.Add("Start", (*) => StartArknights())
+arknights_menu.Add("Screenshot", (*) => ScreenshotArknights())
+tray.Add("Arknights", arknights_menu)
+
+tray.Add("Reload", (*) => Reload())
 tray.Add("Exit", (*) => ExitApp())
