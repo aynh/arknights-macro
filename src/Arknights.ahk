@@ -28,7 +28,11 @@ tray.Delete()
 
 arknights_menu := Menu()
 arknights_menu.Add("Start", (*) => Arknights.Start())
+arknights_menu.Add("Restart", (*) => Arknights.Start(true))
+arknights_menu.Add()
 arknights_menu.Add("Screenshot", (*) => Arknights.Screenshot())
+arknights_menu.Add()
+arknights_menu.Add("Close", (*) => Arknights.Close())
 tray.Add("Arknights", arknights_menu)
 
 script_menu := Menu()
@@ -37,31 +41,41 @@ script_menu.Add("Exit", (*) => ExitApp())
 tray.Add("Script", script_menu)
 
 class Arknights {
-  static Start() {
-    static ARKNIGHTS_PACKAGE_NAME := "com.YoStarEN.Arknights"
-    static EMULATOR_PATH := "C:\LDPlayer\LDPlayer9\dnplayer.exe"
-    static EMULATOR_SERIAL := "127.0.0.1:5555"
+  static PACKAGE_NAME := "com.YoStarEN.Arknights"
+  static EMULATOR_PATH := "C:\LDPlayer\LDPlayer9\dnplayer.exe"
+  static EMULATOR_SERIAL := "127.0.0.1:5555"
 
-    SplitPath(EMULATOR_PATH, &emulator_exe)
-    if ProcessExist(emulator_exe) {
-      MsgBox(Format("Emulator {} is already open", emulator_exe), , 0x10)
-      return
+  static EMULATOR_EXE {
+    get {
+      SplitPath(this.EMULATOR_PATH, &out)
+      return out
+    }
+  }
+
+  static Start(close_existing := false) {
+    if ProcessExist(this.EMULATOR_EXE) {
+      if close_existing
+        ProcessClose(this.EMULATOR_EXE)
+      else {
+        MsgBox(Format("Emulator {} is already open", this.EMULATOR_EXE), , 0x10)
+        return
+      }
     }
 
     shell := ComObject("Wscript.Shell")
-    shell.Run(Format("{} /C start {}", A_ComSpec, EMULATOR_PATH), 0, false)
-    WinWait(Format("ahk_exe {}", emulator_exe))
+    shell.Run(Format("{} /C start {}", A_ComSpec, this.EMULATOR_PATH), 0, false)
+    WinWait(Format("ahk_exe {}", this.EMULATOR_EXE))
     WinMinimize()
 
-    Adb.Setup(EMULATOR_SERIAL)
+    Adb.Setup(this.EMULATOR_SERIAL)
     while not Adb.Run(
       ; sometimes it doesn't actually launch the game so
       Format(
         ; check if arknights is currently open
-        'shell dumpsys window windows | findstr "mCurrentFocus" | findstr "{}"', ARKNIGHTS_PACKAGE_NAME
+        'shell dumpsys window windows | findstr "mCurrentFocus" | findstr "{}"', this.PACKAGE_NAME
       )
     )
-      Adb.Run(Format("shell monkey -p {} 1", ARKNIGHTS_PACKAGE_NAME))
+      Adb.Run(Format("shell monkey -p {} 1", this.PACKAGE_NAME))
 
     Adb.OCR_Click([615, 655, 50, 50], "START", 2.5)
     Adb.OCR_Click([595, 495, 85, 25], "START", 2.5)
@@ -71,6 +85,11 @@ class Arknights {
       && MsgBox("Arknights has started, show the window?", , 0x4 + 0x40) == "Yes"
     )
       WinActivate()
+  }
+
+  static Close() {
+    if ProcessClose(this.EMULATOR_EXE)
+      MsgBox("Arknights is closed", , 0x10)
   }
 
   static Screenshot() {
