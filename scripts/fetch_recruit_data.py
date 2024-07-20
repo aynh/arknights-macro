@@ -47,6 +47,12 @@ def main():
         )
     operator_pool.sort(key=lambda operator: (operator["rarity"], operator["name"]))
 
+    known_tags = set()
+    for operator in operator_pool:
+        for tag in operator["tags"]:
+            known_tags.add(tag)
+    known_tags = sorted(known_tags)
+
     with open(RECRUIT_TOOL_FILE_PATH, "r") as f:
         data = []
         while line := f.readline():
@@ -64,6 +70,15 @@ def main():
         data.append("   ")
         for combination in itertools.combinations([1, 2, 3, 4, 5], idx):
             data.append(f" {list(combination)},")
+        data.append("\n")
+    data.append("  ]\n")
+
+    data.append("\n")
+    data.append("  static known_tags := [\n")
+    for tags in itertools.batched(known_tags, 5):
+        data.append("   ")
+        for tag in tags:
+            data.append(f" '{tag}',")
         data.append("\n")
     data.append("  ]\n")
 
