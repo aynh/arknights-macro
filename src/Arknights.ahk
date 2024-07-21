@@ -53,7 +53,7 @@ ShowTrayMenu(wParam, lParam, *) {
   tray := Menu()
   tray.Add("Arknights", arknights_menu)
   tray.Add("Script", script_menu)
-  tray.Show()
+  SetTimer(() => tray.Show(), -1)
 }
 
 class Arknights {
