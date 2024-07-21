@@ -53,8 +53,8 @@ class RepeatStageGui extends Gui {
 LoopStageAuto(use_sanity_potions) {
   static START_STAGE_XY := [1140, 660]
 
-  ChangeStageMultiplier(2)
-  stage_cost := GetStageCost() / 2
+  ChangeStageMultiplier(6)
+  stage_cost := GetStageCost() / 6
 
   loop {
     sanity := GetCurrentSanity()
