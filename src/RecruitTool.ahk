@@ -8,7 +8,7 @@ RecruitTool() {
   matches := MatchRecruitTags(tags)
 
   if matches.Length == 0
-    return
+    throw ArknightsError(Format("Found no match for tags:`n  {}", ArrayJoin(tags, ", ")))
 
   operator_map := GenerateOperatorMap(tags, matches)
   operator_map_keys := SortedOperatorMapKeys(operator_map)
@@ -96,7 +96,7 @@ GenerateOperatorMap(tags, matches) {
 
 MatchRecruitTags(tags) {
   statiC MAX_RARITY := 6
-  static MIN_RARITY := 3
+  static MIN_RARITY := 4
 
   matches := []
 
@@ -154,10 +154,8 @@ GetRecruitTags() {
     tag := StrReplace(tag, '-', ' ')
     tag := StrLower(tag)
 
-    if !ArrayIncludes(RecruitToolData.known_tags, tag) {
-      MsgBox(Format('Got unknown tag "{}"', tag), , 0x10)
-      return []
-    }
+    if !ArrayIncludes(RecruitToolData.known_tags, tag)
+      throw ArknightsError(Format('Got unknown tag "{}" @ index {}', tag, tags.Length + 1))
 
     tags.Push(tag)
   }

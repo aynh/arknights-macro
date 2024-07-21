@@ -10,7 +10,10 @@
 #1:: Do(RepeatStage) ; WIN + 1
 #2:: Do(RepeatVisit) ; WIN + 2
 #3:: Do(RecruitTool) ; WIN + 3
-#Escape:: Reload() ; WIN + Esc
+#Escape:: { ; WIN + Esc
+  if MsgBox("Reload the script?", , 0x4) == "Yes"
+    Reload()
+}
 #`:: Arknights.Screenshot()
 
 Do(task) {
@@ -78,10 +81,8 @@ class Arknights {
     if this.emulator_running {
       if close_existing
         ProcessClose(this.EMULATOR_EXE)
-      else {
-        MsgBox(Format("Emulator {} is already open", this.EMULATOR_EXE), , 0x10)
-        return
-      }
+      else
+        throw ArknightsError(Format("Emulator {} is already open", this.EMULATOR_EXE))
     }
 
     shell := ComObject("Wscript.Shell")
@@ -111,7 +112,7 @@ class Arknights {
 
   static Close() {
     if ProcessClose(this.EMULATOR_EXE)
-      MsgBox("Arknights is closed", , 0x10)
+      MsgBox("Arknights has been closed", , 0x20)
   }
 
   static Screenshot() {
@@ -145,4 +146,16 @@ class Arknights {
 
     WinClose()
   }
+}
+
+OnError(HandleArknightsError)
+class ArknightsError extends Error {
+}
+HandleArknightsError(err, mode) {
+  if !(err is ArknightsError)
+    return
+
+  SplitPath(err.File, &filename)
+  MsgBox(err.Message, Format("Error @ {}:{}", filename, err.Line), 0x10)
+  return 1
 }
