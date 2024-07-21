@@ -23,22 +23,38 @@ Do(task) {
   }
 }
 
-tray := A_TrayMenu
-tray.Delete()
+A_TrayMenu.Delete() ; clear the default tray
+OnMessage(0x404, ShowTrayMenu)
+ShowTrayMenu(wParam, lParam, *) {
+  ; only handle left/right click event
+  if lParam != 0x201 && lParam != 0x204
+    return
 
-arknights_menu := Menu()
-arknights_menu.Add("Start", (*) => Arknights.Start())
-arknights_menu.Add("Restart", (*) => Arknights.Start(true))
-arknights_menu.Add()
-arknights_menu.Add("Screenshot", (*) => Arknights.Screenshot())
-arknights_menu.Add()
-arknights_menu.Add("Close", (*) => Arknights.Close())
-tray.Add("Arknights", arknights_menu)
+  arknights_menu := Menu()
+  arknights_menu.Add("Start", (*) => Arknights.Start())
+  arknights_menu.Add("Restart", (*) => Arknights.Start(true))
+  arknights_menu.Add()
+  arknights_menu.Add("Screenshot", (*) => Arknights.Screenshot())
+  arknights_menu.Add()
+  arknights_menu.Add("Close", (*) => Arknights.Close())
 
-script_menu := Menu()
-script_menu.Add("Reload", (*) => Reload())
-script_menu.Add("Exit", (*) => ExitApp())
-tray.Add("Script", script_menu)
+  if Arknights.emulator_running {
+    arknights_menu.Disable("Start")
+  } else {
+    arknights_menu.Disable("Restart")
+    arknights_menu.Disable("Screenshot")
+    arknights_menu.Disable("Close")
+  }
+
+  script_menu := Menu()
+  script_menu.Add("Reload", (*) => Reload())
+  script_menu.Add("Exit", (*) => ExitApp())
+
+  tray := Menu()
+  tray.Add("Arknights", arknights_menu)
+  tray.Add("Script", script_menu)
+  tray.Show()
+}
 
 class Arknights {
   static PACKAGE_NAME := "com.YoStarEN.Arknights"
@@ -52,8 +68,14 @@ class Arknights {
     }
   }
 
+  static emulator_running {
+    get {
+      return ProcessExist(this.EMULATOR_EXE)
+    }
+  }
+
   static Start(close_existing := false) {
-    if ProcessExist(this.EMULATOR_EXE) {
+    if this.emulator_running {
       if close_existing
         ProcessClose(this.EMULATOR_EXE)
       else {
