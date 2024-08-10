@@ -157,5 +157,5 @@ HandleArknightsError(err, mode) {
 
   SplitPath(err.File, &filename)
   MsgBox(err.Message, Format("Error @ {}:{}", filename, err.Line), 0x10)
-  return 1
+  return -1
 }
