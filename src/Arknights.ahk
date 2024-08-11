@@ -20,8 +20,13 @@ Do(task) {
   static is_running := false
   if !is_running {
     is_running := true
-    task()
-    TrayTip(Format("{} is finished", task.Name), A_ScriptName, 0x1)
+
+    try task()
+    catch ArknightsError as err
+      ArknightsError.Handle(err)
+    else
+      TrayTip(Format("{} is finished", task.Name), A_ScriptName, 0x1)
+
     is_running := false
   }
 }
@@ -148,14 +153,10 @@ class Arknights {
   }
 }
 
-OnError(HandleArknightsError)
 class ArknightsError extends Error {
-}
-HandleArknightsError(err, mode) {
-  if !(err is ArknightsError)
-    return
-
-  SplitPath(err.File, &filename)
-  MsgBox(err.Message, Format("Error @ {}:{}", filename, err.Line), 0x10)
-  return -1
+  static Handle(err) {
+    SplitPath(err.File, &filename)
+    title := Format("Error @ {}:{}", filename, err.Line)
+    MsgBox(err.Message, title, 0x10)
+  }
 }
