@@ -35,33 +35,8 @@ A_TrayMenu.Delete() ; clear the default tray
 OnMessage(0x404, ShowTrayMenu)
 ShowTrayMenu(wParam, lParam, *) {
   ; only handle left/right click event
-  if lParam != 0x201 && lParam != 0x204
-    return
-
-  arknights_menu := Menu()
-  arknights_menu.Add("Start", (*) => Arknights.Start())
-  arknights_menu.Add("Restart", (*) => Arknights.Start(true))
-  arknights_menu.Add()
-  arknights_menu.Add("Screenshot", (*) => Arknights.Screenshot())
-  arknights_menu.Add()
-  arknights_menu.Add("Close", (*) => Arknights.Close())
-
-  if Arknights.emulator_running {
-    arknights_menu.Disable("Start")
-  } else {
-    arknights_menu.Disable("Restart")
-    arknights_menu.Disable("Screenshot")
-    arknights_menu.Disable("Close")
-  }
-
-  script_menu := Menu()
-  script_menu.Add("Reload", (*) => Reload())
-  script_menu.Add("Exit", (*) => ExitApp())
-
-  tray := Menu()
-  tray.Add("Arknights", arknights_menu)
-  tray.Add("Script", script_menu)
-  SetTimer(() => tray.Show(), -1)
+  if lParam == 0x201 || lParam == 0x204
+    SetTimer(() => CustomTrayMenu().Show(), -1) ; show the menu in another thread
 }
 
 class Arknights {
@@ -73,6 +48,12 @@ class Arknights {
     get {
       SplitPath(this.EMULATOR_PATH, &out)
       return out
+    }
+  }
+
+  static emulator_muted {
+    get {
+      return Adb.Run('shell media volume --get | findstr /C:"volume is 0"')
     }
   }
 
@@ -151,6 +132,11 @@ class Arknights {
 
     WinClose()
   }
+
+  static ToggleMute() {
+    new_volume := this.emulator_muted ? 15 : 0
+    Adb.Run(Format("shell media volume --show --set {}", new_volume))
+  }
 }
 
 class ArknightsError extends Error {
@@ -158,5 +144,45 @@ class ArknightsError extends Error {
     SplitPath(err.File, &filename)
     title := Format("Error @ {}:{}", filename, err.Line)
     MsgBox(err.Message, title, 0x10)
+  }
+}
+
+class CustomTrayMenu extends Menu {
+  __New() {
+    this.Add("Arknights", CustomTrayMenu.Arknights())
+    this.Add("Script", CustomTrayMenu.Script())
+  }
+
+  static Arknights() {
+    m := Menu()
+    m.Add("Start", (*) => Arknights.Start())
+    m.Add("Restart", (*) => Arknights.Start(true))
+    m.Add()
+    m.Add("Mute", (*) => Arknights.ToggleMute())
+    m.Add("Screenshot", (*) => Arknights.Screenshot())
+    m.Add()
+    m.Add("Close", (*) => Arknights.Close())
+
+    if Arknights.emulator_running {
+      m.Disable("Start")
+      if Arknights.emulator_muted
+        m.Check("Mute")
+    } else {
+      m.Disable("Restart")
+      m.Disable("Mute")
+      m.Disable("Screenshot")
+      m.Disable("Close")
+    }
+
+    return m
+  }
+
+  static Script() {
+    m := Menu()
+    m.Add("Edit", (*) => Run('"C:\Program Files\Microsoft VS Code\Code.exe" ..'))
+    m.Add("Reload", (*) => Reload())
+    m.Add("Exit", (*) => ExitApp())
+
+    return m
   }
 }
