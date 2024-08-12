@@ -35,8 +35,10 @@ A_TrayMenu.Delete() ; clear the default tray
 OnMessage(0x404, ShowTrayMenu)
 ShowTrayMenu(wParam, lParam, *) {
   ; only handle left/right click event
-  if lParam == 0x201 || lParam == 0x204
-    SetTimer(() => CustomTrayMenu().Show(), -1) ; show the menu in another thread
+  if lParam == 0x201 || lParam == 0x204 {
+    MouseGetPos(&X, &Y)
+    SetTimer(() => CustomTrayMenu().Show(X, Y), -1) ; show the menu in another thread
+  }
 }
 
 class Arknights {
