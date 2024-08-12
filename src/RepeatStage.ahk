@@ -25,9 +25,9 @@ class RepeatStageGui extends Gui {
     StageTypeOnChange(*) {
       switch this["stage_type"].Text {
         case "annihilation":
-          this["loop_count"].Enabled := this["loop_auto"].Enabled := this["use_potion"].Enabled := false
+          this["loop_count"].Enabled := this["loop_auto"].Enabled := false
         case "normal":
-          this["loop_count"].Enabled := this["loop_auto"].Enabled := this["use_potion"].Enabled := true
+          this["loop_count"].Enabled := this["loop_auto"].Enabled := true
       }
     }
     this["stage_type"].OnEvent("Change", StageTypeOnChange)
@@ -38,10 +38,10 @@ class RepeatStageGui extends Gui {
       options := this.Submit()
       switch options.stage_type {
         case "annihilation":
-          LoopStage(5, "annihilation", options.use_potion)
+          LoopStageAuto("annihilation", options.use_potion)
         case "normal":
           if options.loop_auto
-            LoopStageAuto(options.use_potion)
+            LoopStageAuto("normal", options.use_potion)
           else
             LoopStage(Number(options.loop_count), "normal", options.use_potion)
       }
@@ -50,13 +50,41 @@ class RepeatStageGui extends Gui {
   }
 }
 
-LoopStageAuto(use_sanity_potions) {
+LoopStageAuto(kind, use_sanity_potions) {
+  static ANNIHILATION_WEEKLY_ORUNDUM_REGION := [100, 635, 200, 45]
+  static ANNIHILATION_WEEKLY_ORUNDUM_CAP := 1800
   static START_STAGE_XY := [1140, 660]
 
-  ChangeStageMultiplier(6)
-  stage_cost := GetStageCost() / 6
+  switch kind {
+    case "annihilation":
+      stage_cost := 25
+    case "normal":
+      ChangeStageMultiplier(6)
+      stage_cost := GetStageCost() / 6
+  }
 
   loop {
+    if kind == "annihilation" {
+annihilation_orundum:
+      loop {
+        ; the region also includes the loading screen' tips text
+        ; so keep looping until it found a number
+        weekly_orundum := Adb.OCR_NonEmpty(ANNIHILATION_WEEKLY_ORUNDUM_REGION)
+        weekly_orundum := Trim(StrSplit(weekly_orundum, "/")[1])
+        if weekly_orundum == "O"
+          ; the OCR read 0 (zero) as O (letter O)
+          weekly_orundum := 0
+
+        if IsNumber(weekly_orundum) {
+          weekly_orundum := Number(weekly_orundum)
+          break annihilation_orundum
+        }
+      }
+
+      if weekly_orundum == ANNIHILATION_WEEKLY_ORUNDUM_CAP
+        break
+    }
+
     sanity := GetCurrentSanity()
     if sanity < stage_cost {
       if !use_sanity_potions
@@ -69,11 +97,16 @@ LoopStageAuto(use_sanity_potions) {
       continue
     }
 
-    DoStageAuto(sanity, stage_cost)
+    switch kind {
+      case "annihilation":
+        DoStage("annihilation", false)
+      case "normal":
+        DoStageNormalAuto(sanity, stage_cost)
+    }
   }
 }
 
-DoStageAuto(sanity, stage_cost) {
+DoStageNormalAuto(sanity, stage_cost) {
   loop 6 {
     ; loop through 6 to 1 to get maximum sanity spent
     multiplier := 7 - A_Index
