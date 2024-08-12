@@ -179,10 +179,19 @@ class CustomTrayMenu extends Menu {
 
   static Script() {
     m := Menu()
-    m.Add("Edit", (*) => Run('"C:\Program Files\Microsoft VS Code\Code.exe" ..'))
+    m.Add("Edit", CustomTrayMenu.EditScript)
     m.Add("Reload", (*) => Reload())
     m.Add("Exit", (*) => ExitApp())
 
     return m
+  }
+
+  static EditScript(*) {
+    ; using code.cmd because directly opening Code.exe here sometimes doesn't work
+    static VSCODE_BIN := "C:\Program Files\Microsoft VS Code\bin\code.cmd"
+
+    shell := ComObject("Wscript.Shell")
+    ; and also Wscript.Shell.Run instead of plain Run to hide the cmd window
+    shell.Run(FOrmat('"{}" ..', VSCODE_BIN), 0, true)
   }
 }
