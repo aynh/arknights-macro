@@ -160,18 +160,16 @@ class CustomTrayMenu extends Menu {
     m.Add("Start", (*) => Arknights.Start())
     m.Add("Restart", (*) => Arknights.Start(true))
     m.Add()
-    m.Add("Mute", (*) => Arknights.ToggleMute())
+    m.Add("Toggle Mute", (*) => Arknights.ToggleMute())
     m.Add("Screenshot", (*) => Arknights.Screenshot())
     m.Add()
     m.Add("Close", (*) => Arknights.Close())
 
     if Arknights.emulator_running {
       m.Disable("Start")
-      if Arknights.emulator_muted
-        m.Check("Mute")
     } else {
       m.Disable("Restart")
-      m.Disable("Mute")
+      m.Disable("Toggle Mute")
       m.Disable("Screenshot")
       m.Disable("Close")
     }
@@ -194,6 +192,6 @@ class CustomTrayMenu extends Menu {
 
     shell := ComObject("Wscript.Shell")
     ; and also Wscript.Shell.Run instead of plain Run to hide the cmd window
-    shell.Run(FOrmat('"{}" ..', VSCODE_BIN), 0, true)
+    shell.Run(Format('"{}" ..', VSCODE_BIN), 0, true)
   }
 }
