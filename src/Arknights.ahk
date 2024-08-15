@@ -6,7 +6,7 @@
 #Include RepeatStage.ahk
 #Include RepeatVisit.ahk
 
-#HotIf WinExist('LDPlayer ahk_exe dnplayer.exe')
+#HotIf WinActive(Format("ahk_exe {}", Arknights.EMULATOR_EXE))
 #1:: Do(RepeatStage) ; WIN + 1
 #2:: Do(RepeatVisit) ; WIN + 2
 #3:: Do(RecruitTool) ; WIN + 3
