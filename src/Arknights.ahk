@@ -37,7 +37,7 @@ ShowTrayMenu(wParam, lParam, *) {
   ; only handle left/right click event
   if lParam == 0x201 || lParam == 0x204 {
     MouseGetPos(&X, &Y)
-    SetTimer(() => CustomTrayMenu().Show(X, Y), -1) ; show the menu in another thread
+    SetTimer(() => ArknightsTray().Show(X, Y), -1) ; show the menu in another thread
   }
 }
 
@@ -149,10 +149,10 @@ class ArknightsError extends Error {
   }
 }
 
-class CustomTrayMenu extends Menu {
+class ArknightsTray extends Menu {
   __New() {
-    this.Add("Arknights", CustomTrayMenu.Arknights())
-    this.Add("Script", CustomTrayMenu.Script())
+    this.Add("Arknights", ArknightsTray.Arknights())
+    this.Add("Script", ArknightsTray.Script())
   }
 
   static Arknights() {
@@ -179,7 +179,7 @@ class CustomTrayMenu extends Menu {
 
   static Script() {
     m := Menu()
-    m.Add("Edit", CustomTrayMenu.EditScript)
+    m.Add("Edit", ArknightsTray.EditScript)
     m.Add("Reload", (*) => Reload())
     m.Add("Exit", (*) => ExitApp())
 
