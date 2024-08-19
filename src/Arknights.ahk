@@ -53,12 +53,6 @@ class Arknights {
     }
   }
 
-  static emulator_muted {
-    get {
-      return Adb.Run('shell media volume --get | findstr /C:"volume is 0"')
-    }
-  }
-
   static emulator_running {
     get {
       return ProcessExist(this.EMULATOR_EXE)
@@ -135,9 +129,8 @@ class Arknights {
     WinClose()
   }
 
-  static ToggleMute() {
-    new_volume := this.emulator_muted ? 15 : 0
-    Adb.Run(Format("shell media volume --show --set {}", new_volume))
+  static Mute(yes) {
+    Adb.Run(Format("shell media volume --show --set {}", yes ? 0 : 15))
   }
 }
 
@@ -160,7 +153,8 @@ class ArknightsTray extends Menu {
     m.Add("Start", (*) => Arknights.Start())
     m.Add("Restart", (*) => Arknights.Start(true))
     m.Add()
-    m.Add("Toggle Mute", (*) => Arknights.ToggleMute())
+    m.Add("Mute", (*) => Arknights.Mute(true))
+    m.Add("Unmute", (*) => Arknights.Mute(false))
     m.Add("Screenshot", (*) => Arknights.Screenshot())
     m.Add()
     m.Add("Close", (*) => Arknights.Close())
@@ -169,7 +163,8 @@ class ArknightsTray extends Menu {
       m.Disable("Start")
     } else {
       m.Disable("Restart")
-      m.Disable("Toggle Mute")
+      m.Disable("Mute")
+      m.Disable("Unmute")
       m.Disable("Screenshot")
       m.Disable("Close")
     }
