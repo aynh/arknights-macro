@@ -107,14 +107,10 @@ annihilation_orundum:
 }
 
 DoStageNormalAuto(sanity, stage_cost) {
-  loop 6 {
-    ; loop through 6 to 1 to get maximum sanity spent
-    multiplier := 7 - A_Index
-    if (multiplier * stage_cost) <= sanity {
-      ChangeStageMultiplier(multiplier)
-      DoStage("normal", false)
-      return
-    }
+  multiplier := Min(Floor(sanity / stage_cost), 6)
+  if multiplier > 0 {
+    ChangeStageMultiplier(multiplier)
+    DoStage("normal", false)
   }
 }
 
