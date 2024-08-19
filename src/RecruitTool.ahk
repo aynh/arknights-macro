@@ -150,7 +150,7 @@ GetRecruitTags() {
   for xy in TAGS_TOP_LEFT_XY {
     tag := Adb.OCR([
       xy[1], xy[2], TAG_WIDTH, TAG_HEIGHT
-    ], 2.5)
+    ], 5)
     tag := StrReplace(tag, '-', ' ')
     tag := StrLower(tag)
 
