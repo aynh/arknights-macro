@@ -7,25 +7,27 @@
 #Include RepeatVisit.ahk
 
 #HotIf WinActive(Format("ahk_exe {}", Arknights.EMULATOR_EXE))
-#1:: Do(RepeatStage) ; WIN + 1
-#2:: Do(RepeatVisit) ; WIN + 2
-#3:: Do(RecruitTool) ; WIN + 3
+#1:: Do(RepeatStage, true) ; WIN + 1
+#2:: Do(RepeatVisit, true) ; WIN + 2
+#3:: Do(RecruitTool, false) ; WIN + 3
 #Escape:: { ; WIN + Esc
   if MsgBox("Reload the script?", , 0x4) == "Yes"
     Reload()
 }
 #`:: Arknights.Screenshot()
 
-Do(task) {
+Do(task, should_notify) {
   static is_running := false
   if !is_running {
     is_running := true
 
-    try task()
-    catch ArknightsError as err
+    try {
+      task()
+      if should_notify
+        TrayTip(Format("{} is finished", task.Name), A_ScriptName, 0x1)
+    } catch ArknightsError as err {
       ArknightsError.Handle(err)
-    else
-      TrayTip(Format("{} is finished", task.Name), A_ScriptName, 0x1)
+    }
 
     is_running := false
   }
