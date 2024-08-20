@@ -10,11 +10,7 @@
 #1:: Do(RepeatStage, true) ; WIN + 1
 #2:: Do(RepeatVisit, true) ; WIN + 2
 #3:: Do(RecruitTool, false) ; WIN + 3
-#Escape:: { ; WIN + Esc
-  if MsgBox("Reload the script?", , 0x4) == "Yes"
-    Reload()
-}
-#`:: Arknights.Screenshot()
+!Space:: ArknightsTray().Show() ; ALT + Space
 
 Do(task, should_notify) {
   static is_running := false
