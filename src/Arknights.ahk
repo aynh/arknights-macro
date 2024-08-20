@@ -7,25 +7,31 @@
 #Include RepeatVisit.ahk
 
 #HotIf WinActive(Format("ahk_exe {}", Arknights.EMULATOR_EXE))
-#1:: Do(RepeatStage, true) ; WIN + 1
-#2:: Do(RepeatVisit, true) ; WIN + 2
-#3:: Do(RecruitTool, false) ; WIN + 3
+#1:: Runner(RepeatStage, true) ; WIN + 1
+#2:: Runner(RepeatVisit, true) ; WIN + 2
+#3:: Runner(RecruitTool, false) ; WIN + 3
 !Space:: ArknightsTray().Show() ; ALT + Space
 
-Do(task, should_notify) {
-  static is_running := false
-  if !is_running {
-    is_running := true
+class Runner {
+  static current_task := ""
+
+  __New(task, notify_after_done) {
+    if Runner.current_task != "" {
+      MsgBox(Format("The script is currently running {}!", Runner.current_task), , 0x10)
+      return
+    }
+
+    Runner.current_task := task.Name
 
     try {
       task()
-      if should_notify
+      if notify_after_done
         TrayTip(Format("{} is finished", task.Name), A_ScriptName, 0x1)
     } catch ArknightsError as err {
       ArknightsError.Handle(err)
     }
 
-    is_running := false
+    Runner.current_task := ""
   }
 }
 
@@ -142,11 +148,17 @@ class ArknightsError extends Error {
 
 class ArknightsTray extends Menu {
   __New() {
+    state := Runner.current_task != "" ? Format("Running {}", Runner.current_task) : "Idle"
+    state := Format("State: {}", state)
+    this.Add(state, (*) => {})
+    this.Disable(state)
+
+    this.Add()
     this.Add("Arknights", ArknightsTray.Arknights())
     this.Add("Script", ArknightsTray.Script())
+
     this.Add()
     this.Add("Tools", ArknightsTray.Tools())
-
     if !Arknights.emulator_running {
       this.Disable("Tools")
     }
@@ -187,9 +199,9 @@ class ArknightsTray extends Menu {
 
   static Tools() {
     m := Menu()
-    m.Add("Repeat-Stage", (*) => Do(RepeatStage, true))
-    m.Add("Repeat-Visit", (*) => Do(RepeatVisit, true))
-    m.Add("Recruit-Tool", (*) => Do(RecruitTool, false))
+    m.Add("Repeat-Stage", (*) => Runner(RepeatStage, true))
+    m.Add("Repeat-Visit", (*) => Runner(RepeatVisit, true))
+    m.Add("Recruit-Tool", (*) => Runner(RecruitTool, false))
 
     return m
   }
