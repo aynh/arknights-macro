@@ -142,23 +142,14 @@ class ArknightsError extends Error {
 
 class ArknightsTray extends Menu {
   __New() {
-    this.Add("Tools", ArknightsTray.Tools())
-    this.Add()
     this.Add("Arknights", ArknightsTray.Arknights())
     this.Add("Script", ArknightsTray.Script())
+    this.Add()
+    this.Add("Tools", ArknightsTray.Tools())
 
     if !Arknights.emulator_running {
       this.Disable("Tools")
     }
-  }
-
-  static Tools() {
-    m := Menu()
-    m.Add("Repeat-Stage", (*) => Do(RepeatStage, true))
-    m.Add("Repeat-Visit", (*) => Do(RepeatVisit, true))
-    m.Add("Recruit-Tool", (*) => Do(RecruitTool, false))
-
-    return m
   }
 
   static Arknights() {
@@ -190,6 +181,15 @@ class ArknightsTray extends Menu {
     m.Add("Edit", ArknightsTray.EditScript)
     m.Add("Reload", (*) => Reload())
     m.Add("Exit", (*) => ExitApp())
+
+    return m
+  }
+
+  static Tools() {
+    m := Menu()
+    m.Add("Repeat-Stage", (*) => Do(RepeatStage, true))
+    m.Add("Repeat-Visit", (*) => Do(RepeatVisit, true))
+    m.Add("Recruit-Tool", (*) => Do(RecruitTool, false))
 
     return m
   }
