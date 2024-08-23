@@ -115,7 +115,7 @@ class Adb {
   static OCR(region, scale := 1, retake_screenshot := false) {
     screenshot := this.Screenshot(region, retake_screenshot)
     hBitmap := ImagePutHBitmap({ buffer: screenshot, scale: scale })
-    return OCR.FromBitmap(hBitmap, 'en-US').Text
+    return Trim(OCR.FromBitmap(hBitmap, 'en-US').Text)
   }
 
   ; variant of OCR that keeps running until it gets non-empty value
