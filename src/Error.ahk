@@ -1,0 +1,2 @@
+class ArknightsError extends Error {
+}

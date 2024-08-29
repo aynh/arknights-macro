@@ -45,6 +45,10 @@ class Adb {
     this.Run("shell input keyevent 4")
   }
 
+  static SetVolume(to) {
+    this.Run(Format("shell media volume --show --set {}", to))
+  }
+
   ; screenshot the android device, optionally cropping the image with region if specified
   static TMP_IMAGE_PATH := Format("{}/screenshot.png", A_Temp)
   static Screenshot(region := [], retake := true) {

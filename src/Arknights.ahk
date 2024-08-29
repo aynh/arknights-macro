@@ -2,36 +2,39 @@
 #SingleInstance Force
 
 #Include Adb.ahk
+#Include Error.ahk
 #Include RecruitTool.ahk
 #Include RepeatStage.ahk
 #Include RepeatVisit.ahk
 
-#HotIf WinActive(Format("ahk_exe {}", Arknights.EMULATOR_EXE))
-#1:: Runner(RepeatStage, true) ; WIN + 1
-#2:: Runner(RepeatVisit, true) ; WIN + 2
-#3:: Runner(RecruitTool, false) ; WIN + 3
+#HotIf WinActive(Arknights.AHK_EXE)
+#1:: RunTask(RepeatStage, true) ; WIN + 1
+#2:: RunTask(RepeatVisit, true) ; WIN + 2
+#3:: RunTask(RecruitTool, false) ; WIN + 3
 !Space:: ArknightsTray().Show() ; ALT + Space
 
-class Runner {
-  static current_task := ""
+class RunTask {
+  static current := ""
 
   __New(task, notify_after_done) {
-    if Runner.current_task != "" {
-      MsgBox(Format("The script is currently running {}!", Runner.current_task), , 0x10)
+    if RunTask.current != "" {
+      MsgBox(Format("The script is currently running {}!", RunTask.current), , 0x10)
       return
     }
 
-    Runner.current_task := task.Name
+    RunTask.current := task.Name
 
     try {
       task()
       if notify_after_done
         TrayTip(Format("{} is finished", task.Name), A_ScriptName, 0x1)
     } catch ArknightsError as err {
-      ArknightsError.Handle(err)
+      SplitPath(err.File, &filename)
+      title := Format("Error @ {}:{}", filename, err.Line)
+      MsgBox(err.Message, title, 0x10)
     }
 
-    Runner.current_task := ""
+    RunTask.current := ""
   }
 }
 
@@ -50,6 +53,12 @@ class Arknights {
   static EMULATOR_PATH := "C:\LDPlayer\LDPlayer9\dnplayer.exe"
   static EMULATOR_SERIAL := "127.0.0.1:5555"
 
+  static AHK_EXE {
+    get {
+      return Format("ahk_exe {}", Arknights.EMULATOR_EXE)
+    }
+  }
+
   static EMULATOR_EXE {
     get {
       SplitPath(this.EMULATOR_PATH, &out)
@@ -66,14 +75,14 @@ class Arknights {
   static Start(close_existing := false) {
     if this.emulator_running {
       if close_existing
-        ProcessClose(this.EMULATOR_EXE)
+        this.CloseEmulator()
       else
         throw ArknightsError(Format("Emulator {} is already open", this.EMULATOR_EXE))
     }
 
     shell := ComObject("Wscript.Shell")
     shell.Run(Format("{} /C start {}", A_ComSpec, this.EMULATOR_PATH), 0, false)
-    WinWait(Format("ahk_exe {}", this.EMULATOR_EXE))
+    WinWait(this.AHK_EXE)
     WinMinimize()
 
     Adb.Setup(this.EMULATOR_SERIAL)
@@ -96,9 +105,8 @@ class Arknights {
       WinActivate()
   }
 
-  static Close() {
-    if ProcessClose(this.EMULATOR_EXE)
-      MsgBox("Arknights has been closed", , 0x20)
+  static CloseEmulator() {
+    ProcessClose(this.EMULATOR_EXE)
   }
 
   static Screenshot() {
@@ -134,21 +142,13 @@ class Arknights {
   }
 
   static Mute(yes) {
-    Adb.Run(Format("shell media volume --show --set {}", yes ? 0 : 15))
-  }
-}
-
-class ArknightsError extends Error {
-  static Handle(err) {
-    SplitPath(err.File, &filename)
-    title := Format("Error @ {}:{}", filename, err.Line)
-    MsgBox(err.Message, title, 0x10)
+    Adb.SetVolume(yes ? 0 : 15)
   }
 }
 
 class ArknightsTray extends Menu {
   __New() {
-    state := Runner.current_task != "" ? Format("Running {}", Runner.current_task) : "Idle"
+    state := RunTask.current != "" ? Format("Running {}", RunTask.current) : "Idle"
     state := Format("State: {}", state)
     this.Add(state, (*) => {})
     this.Disable(state)
@@ -159,9 +159,8 @@ class ArknightsTray extends Menu {
 
     this.Add()
     this.Add("Tools", ArknightsTray.Tools())
-    if !Arknights.emulator_running {
+    if !Arknights.emulator_running
       this.Disable("Tools")
-    }
   }
 
   static Arknights() {
@@ -173,7 +172,7 @@ class ArknightsTray extends Menu {
     m.Add("Unmute", (*) => Arknights.Mute(false))
     m.Add("Screenshot", (*) => Arknights.Screenshot())
     m.Add()
-    m.Add("Close", (*) => Arknights.Close())
+    m.Add("Close", (*) => Arknights.CloseEmulator())
 
     if Arknights.emulator_running {
       m.Disable("Start")
@@ -190,28 +189,29 @@ class ArknightsTray extends Menu {
 
   static Script() {
     m := Menu()
-    m.Add("Edit", ArknightsTray.EditScript)
+
+    EditScript(*) {
+      ; using code.cmd because directly opening Code.exe here sometimes doesn't work
+      static VSCODE_BIN := "C:\Program Files\Microsoft VS Code\bin\code.cmd"
+
+      shell := ComObject("Wscript.Shell")
+      ; and also Wscript.Shell.Run instead of plain Run to hide the cmd window
+      shell.Run(Format('"{}" ..', VSCODE_BIN), 0, true)
+    }
+    m.Add("Edit", EditScript)
     m.Add("Reload", (*) => Reload())
     m.Add("Exit", (*) => ExitApp())
+
 
     return m
   }
 
   static Tools() {
     m := Menu()
-    m.Add("Repeat-Stage", (*) => Runner(RepeatStage, true))
-    m.Add("Repeat-Visit", (*) => Runner(RepeatVisit, true))
-    m.Add("Recruit-Tool", (*) => Runner(RecruitTool, false))
+    m.Add("Repeat-Stage", (*) => RunTask(RepeatStage, true))
+    m.Add("Repeat-Visit", (*) => RunTask(RepeatVisit, true))
+    m.Add("Recruit-Tool", (*) => RunTask(RecruitTool, false))
 
     return m
-  }
-
-  static EditScript(*) {
-    ; using code.cmd because directly opening Code.exe here sometimes doesn't work
-    static VSCODE_BIN := "C:\Program Files\Microsoft VS Code\bin\code.cmd"
-
-    shell := ComObject("Wscript.Shell")
-    ; and also Wscript.Shell.Run instead of plain Run to hide the cmd window
-    shell.Run(Format('"{}" ..', VSCODE_BIN), 0, true)
   }
 }

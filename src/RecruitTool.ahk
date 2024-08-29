@@ -1,6 +1,7 @@
 #Requires AutoHotkey v2.0
 
 #Include Adb.ahk
+#Include Error.ahk
 #Include Utilities.ahk
 
 RecruitTool() {
