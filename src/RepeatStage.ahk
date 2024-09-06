@@ -90,6 +90,7 @@ annihilation_orundum:
       if !use_sanity_potions
         break
 
+      ChangeStageMultiplier(1)
       Adb.Click(START_STAGE_XY*)
       if !TryRestoreSanity("potion")
         break
