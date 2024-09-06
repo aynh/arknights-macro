@@ -175,7 +175,7 @@ DoStage(kind, use_sanity_potion) {
 }
 
 WaitUntilOperationComplete() {
-  static OPERATION_COMPLETE_REGION := [60, 175, 220, 80]
+  static OPERATION_COMPLETE_REGION := [60, 175, 220, 90]
 
   Adb.OCR_WaitUntilMatch(OPERATION_COMPLETE_REGION, "OPERATION COMPLETE")
   Sleep(3000) ; wait for the dialogue to finish
