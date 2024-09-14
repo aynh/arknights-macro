@@ -4,5 +4,5 @@
 
 RepeatVisit() {
   loop 10
-    Adb.ClickImage('visit-next', [1090, 580, 185, 100])
+    Adb.ClickImage('visit-next', [1120, 605, 130, 55])
 }
