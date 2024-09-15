@@ -12,15 +12,15 @@ RecruitTool() {
     throw ArknightsError(Format("Found no match for tags:`n  {}", ArrayJoin(tags, ", ")))
 
   operator_map := GenerateOperatorMap(tags, matches)
-  operator_map_keys := SortedOperatorMapKeys(operator_map)
 
-  gui := RecruitToolGui(operator_map, operator_map_keys)
+  gui := RecruitToolGui(operator_map)
   gui.Show()
 }
 
 class RecruitToolGui extends Gui {
-  __New(operator_map, operator_map_keys) {
+  __New(operator_map) {
     super.__New("AlwaysOnTop -MinimizeBox", "RecruitTool")
+    operator_map_keys := this.SortedOperatorMapKeys(operator_map)
 
     this.AddText(, "Operator list")
     this.AddDropDownList('voperator_combobox Choose1', operator_map_keys)
@@ -41,31 +41,31 @@ class RecruitToolGui extends Gui {
     this["operator_combobox"].OnEvent('Change', OperatorComboboxOnChange)
     OperatorComboboxOnChange()
   }
-}
 
-SortedOperatorMapKeys(operator_map) {
-  CompareOperator(a, b, *) {
-    a := operator_map[a]
-    b := operator_map[b]
+  SortedOperatorMapKeys(operator_map) {
+    CompareOperator(a, b, *) {
+      a := operator_map[a]
+      b := operator_map[b]
 
-    switch {
-      ; sort them by their rarity
-      ; (higher rarity first)
-      case a.rarity != b.rarity:
-        return b.rarity - a.rarity
-        ; then sort them by their drop rate
-        ; (higher drop chance first)
-      case a.others.Length != b.others.Length:
-        return a.others.Length - b.others.Length
-        ; then sort (group) them by their combination
-      case a.combination != b.combination:
-        return StrCompare(ArrayJoin(a.combination), ArrayJoin(b.combination))
+      switch {
+        ; sort them by their rarity
+        ; (higher rarity first)
+        case a.rarity != b.rarity:
+          return b.rarity - a.rarity
+          ; then sort them by their drop rate
+          ; (higher drop chance first)
+        case a.others.Length != b.others.Length:
+          return a.others.Length - b.others.Length
+          ; then sort (group) them by their combination
+        case a.combination != b.combination:
+          return StrCompare(ArrayJoin(a.combination), ArrayJoin(b.combination))
+      }
     }
-  }
 
-  joined := ArrayJoin([operator_map*], '|')
-  sorted := Sort(joined, 'D|', CompareOperator)
-  return StrSplit(sorted, '|')
+    joined := ArrayJoin([operator_map*], '|')
+    sorted := Sort(joined, 'D|', CompareOperator)
+    return StrSplit(sorted, '|')
+  }
 }
 
 GenerateOperatorMap(tags, matches) {
