@@ -158,9 +158,9 @@ class ArknightsTray extends Menu {
     this.Add("Script", ArknightsTray.Script())
 
     this.Add()
-    this.Add("Tools", ArknightsTray.Tools())
+    this.Add("Macro", ArknightsTray.Macro())
     if !Arknights.emulator_running
-      this.Disable("Tools")
+      this.Disable("Macro")
   }
 
   static Arknights() {
@@ -206,7 +206,7 @@ class ArknightsTray extends Menu {
     return m
   }
 
-  static Tools() {
+  static Macro() {
     m := Menu()
     m.Add("Repeat-Stage", (*) => RunTask(RepeatStage, true))
     m.Add("Repeat-Visit", (*) => RunTask(RepeatVisit, true))
