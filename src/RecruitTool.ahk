@@ -152,7 +152,9 @@ GetRecruitTags() {
     tag := Adb.OCR([
       xy[1], xy[2], TAG_WIDTH, TAG_HEIGHT
     ], 5)
-    tag := Trim(tag, "',.:;") ; top/senior op tag has dust particles in their box
+    ; filter out all those dust particles
+    tag := Trim(tag, "',.:;·• ")
+    ; normalize the tag
     tag := StrReplace(tag, '-', ' ')
     tag := StrLower(tag)
 
