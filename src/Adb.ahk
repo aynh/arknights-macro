@@ -10,6 +10,8 @@ class Adb {
   static device := "127.0.0.1:5555"
 
   static Setup(device := this.device) {
+    this.Run(Format("disconnect {}", device), true)
+
     while not (
       this.connected := this.Run(
         Format('devices | findstr "\{}\>" | findstr "\device\>"', device), true
