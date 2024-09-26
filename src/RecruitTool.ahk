@@ -148,20 +148,27 @@ GetRecruitTags() {
   static TAG_HEIGHT := 45
 
   tags := []
+read_tag_loop:
   for xy in TAGS_TOP_LEFT_XY {
-    tag := Adb.OCR([
-      xy[1], xy[2], TAG_WIDTH, TAG_HEIGHT
-    ], 5)
-    ; filter out all those dust particles
-    tag := Trim(tag, "',.:;·• ")
-    ; normalize the tag
-    tag := StrReplace(tag, '-', ' ')
-    tag := StrLower(tag)
+retry_tag:
+    loop 5 {
+      tag := Adb.OCR([
+        xy[1], xy[2], TAG_WIDTH, TAG_HEIGHT
+      ], 5, true)
+      ; filter out all those dust particles
+      tag := Trim(tag, "',.:;·• ")
+      ; normalize the tag
+      tag := StrReplace(tag, '-', ' ')
+      tag := StrLower(tag)
 
-    if !ArrayIncludes(RecruitToolData.known_tags, tag)
-      throw ArknightsError(Format('Got unknown tag "{}" @ index {}', tag, tags.Length + 1))
+      if !ArrayIncludes(RecruitToolData.known_tags, tag)
+        continue retry_tag
 
-    tags.Push(tag)
+      tags.Push(tag)
+      continue read_tag_loop
+    }
+
+    throw ArknightsError(Format('Got unknown tag "{}" @ index {}', tag, tags.Length + 1))
   }
 
   return tags
