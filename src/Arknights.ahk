@@ -107,6 +107,7 @@ class Arknights {
 
   static CloseEmulator() {
     ProcessClose(this.EMULATOR_EXE)
+    Reload()
   }
 
   static Screenshot() {
