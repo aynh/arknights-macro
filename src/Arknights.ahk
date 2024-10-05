@@ -32,6 +32,8 @@ class RunTask {
       SplitPath(err.File, &filename)
       title := Format("Error @ {}:{}", filename, err.Line)
       MsgBox(err.Message, title, 0x10)
+    } catch AdbStop {
+      ; catch the stop "error" then do nothing
     }
 
     RunTask.current := ""
@@ -72,13 +74,19 @@ class Arknights {
     }
   }
 
-  static Start(close_existing := false) {
-    if this.emulator_running {
-      if close_existing
-        this.CloseEmulator()
-      else
-        throw ArknightsError(Format("Emulator {} is already open", this.EMULATOR_EXE))
-    }
+  static Restart() {
+    this.CloseEmulator()
+    if Adb.should_stop
+      ; wait for 5 seconds to ensure previously running script is stopped
+      SetTimer(() => this.Start(), -5000)
+    else
+    ; otherwise just start immediately
+      this.Start()
+  }
+
+  static Start() {
+    if this.emulator_running
+      throw ArknightsError(Format("Emulator {} is already open", this.EMULATOR_EXE))
 
     shell := ComObject("Wscript.Shell")
     shell.Run(Format("{} /C start {}", A_ComSpec, this.EMULATOR_PATH), 0, false)
@@ -107,7 +115,8 @@ class Arknights {
 
   static CloseEmulator() {
     ProcessClose(this.EMULATOR_EXE)
-    Reload()
+    if RunTask.current != ""
+      Adb.Stop() ; stop any previously running script
   }
 
   static Screenshot() {
@@ -167,7 +176,7 @@ class ArknightsTray extends Menu {
   static Arknights() {
     m := Menu()
     m.Add("Start", (*) => Arknights.Start())
-    m.Add("Restart", (*) => Arknights.Start(true))
+    m.Add("Restart", (*) => Arknights.Restart())
     m.Add()
     m.Add("Mute", (*) => Arknights.Mute(true))
     m.Add("Unmute", (*) => Arknights.Mute(false))

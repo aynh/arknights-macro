@@ -3,11 +3,17 @@
 #Include <ImagePut>
 #Include <OCR>
 
+#Include Error.ahk
 #Include Utilities.ahk
 
 class Adb {
   static connected := false
   static device := "127.0.0.1:5555"
+
+  static should_stop := false
+  static Stop() {
+    this.should_stop := true
+  }
 
   static Setup(device := this.device) {
     this.Run(Format("disconnect {}", device), true)
@@ -25,7 +31,10 @@ class Adb {
   }
 
   static Run(command, is_setup := false) {
-    if !this.connected && !is_setup
+    if this.should_stop {
+      this.should_stop := false
+      throw AdbStop()
+    } else if !this.connected && !is_setup
       this.Setup()
 
     shell := ComObject("Wscript.Shell")
