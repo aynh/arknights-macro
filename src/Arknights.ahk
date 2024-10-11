@@ -115,6 +115,7 @@ class Arknights {
 
   static CloseEmulator() {
     ProcessClose(this.EMULATOR_EXE)
+    ProcessWaitClose(this.EMULATOR_EXE)
     if RunTask.current != ""
       Adb.Stop() ; stop any previously running script
   }
